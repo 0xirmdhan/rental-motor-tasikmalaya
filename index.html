@@ -2047,23 +2047,41 @@ function resetForm(){
 
 // ===== KTP & BUKTI UPLOAD =====
 let ktpDataNew=null,ktpDataEdit=null;
+// Compress gambar sebelum disimpan — max 800px, quality 0.6
+function compressImage(dataURL, maxSize, quality, cb){
+  const img=new Image();
+  img.onload=function(){
+    let w=img.width, h=img.height;
+    if(w>maxSize||h>maxSize){
+      if(w>h){h=Math.round(h*(maxSize/w));w=maxSize;}
+      else{w=Math.round(w*(maxSize/h));h=maxSize;}
+    }
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    canvas.getContext('2d').drawImage(img,0,0,w,h);
+    cb(canvas.toDataURL('image/jpeg',quality));
+  };
+  img.src=dataURL;
+}
 function handleKTPUpload(e,mode){
   const file=e.target.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=function(ev){
-    if(mode==='new'){
-      newKTPData=ev.target.result;
-      document.getElementById('new-ktp-preview').src=ev.target.result;
-      document.getElementById('new-ktp-preview').classList.add('show');
-      document.getElementById('ktp-upload-text').textContent='✅ '+file.name;
-      document.getElementById('ktp-upload-area-new').style.borderColor='var(--green)';
-      const fg=document.getElementById('fg-ktp-file');fg.classList.remove('has-error');
-    } else {
-      ktpDataEdit=ev.target.result;
-      document.getElementById('e-ktp-preview').src=ev.target.result;
-      document.getElementById('e-ktp-preview').classList.add('show');
-      document.getElementById('e-ktp-text').textContent='✅ '+file.name;
-    }
+    compressImage(ev.target.result, 800, 0.6, function(compressed){
+      if(mode==='new'){
+        newKTPData=compressed;
+        document.getElementById('new-ktp-preview').src=compressed;
+        document.getElementById('new-ktp-preview').classList.add('show');
+        document.getElementById('ktp-upload-text').textContent='✅ '+file.name;
+        document.getElementById('ktp-upload-area-new').style.borderColor='var(--green)';
+        const fg=document.getElementById('fg-ktp-file');fg.classList.remove('has-error');
+      } else {
+        ktpDataEdit=compressed;
+        document.getElementById('e-ktp-preview').src=compressed;
+        document.getElementById('e-ktp-preview').classList.add('show');
+        document.getElementById('e-ktp-text').textContent='✅ '+file.name;
+      }
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -2071,12 +2089,14 @@ function handleBuktiUpload(e,mode){
   const file=e.target.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=function(ev){
-    if(mode==='new'){
-      newBuktiData=ev.target.result;
-      document.getElementById('new-bukti-preview').src=ev.target.result;
-      document.getElementById('new-bukti-preview').classList.add('show');
-      document.getElementById('bukti-upload-text').textContent='✅ '+file.name;
-    }
+    compressImage(ev.target.result, 800, 0.6, function(compressed){
+      if(mode==='new'){
+        newBuktiData=compressed;
+        document.getElementById('new-bukti-preview').src=compressed;
+        document.getElementById('new-bukti-preview').classList.add('show');
+        document.getElementById('bukti-upload-text').textContent='✅ '+file.name;
+      }
+    });
   };
   reader.readAsDataURL(file);
 }
