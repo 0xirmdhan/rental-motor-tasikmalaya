@@ -419,10 +419,11 @@ img,video,iframe,table{max-width:100%}
 .modal-row.single{grid-template-columns:1fr}
 
 /* PRINT STYLES */
+@page{margin:0;size:A4}
 @media print{
   body *{visibility:hidden}
   #print-area,#print-area *{visibility:visible}
-  #print-area{position:fixed;inset:0;background:#fff;padding:20px;display:block!important}
+  #print-area{position:fixed;inset:0;background:#fff;padding:28px 32px;display:block!important}
   .no-print{display:none!important}
 }
 
@@ -1866,7 +1867,6 @@ function openStruk(idx){
   document.getElementById('modal-struk').classList.add('show');
 }
 function cetakStruk(){
-  const printArea=document.getElementById('print-area');
   const headerHtml=`
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
@@ -1877,10 +1877,22 @@ function cetakStruk(){
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
     </div>
   `;
-  printArea.innerHTML=headerHtml+document.getElementById('struk-content').innerHTML;
-  printArea.style.display='block';
-  window.print();
-  setTimeout(()=>{printArea.style.display='none';},500);
+  const content = headerHtml + document.getElementById('struk-content').innerHTML;
+  const w = window.open('','_blank','width=700,height=900');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Struk Rental Motor Tasikmalaya</title>
+    <style>
+      @page{margin:0;size:A5}
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',Arial,sans-serif;padding:28px 32px;background:#fff;color:#111827;font-size:13px}
+      table{width:100%;border-collapse:collapse}
+      td{padding:7px 0;border-bottom:1px solid #e5e7eb;vertical-align:top}
+      td:last-child{text-align:right;font-weight:600}
+      .total-row td{font-size:15px;font-weight:700;border-top:2px solid #111827;border-bottom:none;padding-top:12px;color:#2563eb}
+      .footer-note{text-align:center;font-size:10px;color:#6b7280;margin-top:18px}
+    </style>
+  </head><body>${content}<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);}<\/script></body></html>`);
+  w.document.close();
 }
 function kirimWA(){
   if(curStrukIdx===null)return;
