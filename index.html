@@ -114,16 +114,13 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .avatar-admin{background:linear-gradient(135deg,#2563EB,#7c3aed)}
 .avatar-bos{background:linear-gradient(135deg,#d97706,#dc2626)}
-.avatar-staff{background:linear-gradient(135deg,#16a34a,#0891b2)}
-.user-name{font-size:12px;font-weight:600;color:var(--text-body);line-height:1.2}
+/* No more staff role */.user-name{font-size:12px;font-weight:600;color:var(--text-body);line-height:1.2}
 .user-role{font-size:10px;color:var(--text3)}
 .role-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:100px;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
 .role-badge-admin{background:#dbeafe;color:#1d4ed8}
 .role-badge-bos{background:#fef3c7;color:#b45309}
-.role-badge-staff{background:#dcfce7;color:#16a34a}
 [data-theme="dark"] .role-badge-admin{background:rgba(37,99,235,.2);color:#60a5fa}
 [data-theme="dark"] .role-badge-bos{background:rgba(180,83,9,.2);color:#fbbf24}
-[data-theme="dark"] .role-badge-staff{background:rgba(22,163,74,.2);color:#4ade80}
 .logout-btn{display:flex;align-items:center;gap:6px;width:100%;margin-top:8px;padding:8px 12px;border-radius:var(--radius);border:none;background:none;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .12s}
 .logout-btn:hover{background:var(--red-soft);color:var(--red)}
 .logout-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
@@ -306,9 +303,10 @@ input[type="date"],input[type="month"],input[type="week"]{
 
 /* STRUK MODAL */
 .struk-modal{background:var(--surface);border-radius:var(--radius-lg);padding:0;width:100%;max-width:420px;border:1px solid var(--border);animation:pop .18s ease;overflow:hidden}
-.struk-header{background:var(--accent);padding:20px 24px;color:#fff;text-align:center}
-.struk-header-logo{font-size:16px;font-weight:700;margin-bottom:2px}
-.struk-header-sub{font-size:12px;opacity:.8}
+.struk-header{padding:20px 24px 16px;border-bottom:2px solid #111827;margin-bottom:0;text-align:center}
+.struk-header-logo{font-size:17px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.struk-header-sub{font-size:10.5px;color:#4b5563;line-height:1.7}
+.struk-header-badge{display:inline-block;margin-top:8px;background:#111827;color:#fff;font-size:10px;font-weight:700;padding:3px 14px;border-radius:100px;letter-spacing:.06em}
 .struk-body{padding:20px 24px}
 .struk-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px}
 .struk-row:last-of-type{border-bottom:none}
@@ -428,9 +426,7 @@ img,video,iframe,table{max-width:100%}
   .no-print{display:none!important}
 }
 
-/* SUPABASE INFO BOX */
-.info-box{background:var(--blue-soft);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;font-size:12px;color:var(--text2);line-height:1.6}
-.info-box strong{color:var(--text)}
+
 
 /* role guard moved above */
 /* bos cannot input pesanan or edit data */
@@ -777,7 +773,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap PIC</label>
+            <label>Nama Lengkap Penyewa</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1099,7 +1095,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
             </div>
             <div class="lap-filter-row">
               <select id="lap-filter-motor" onchange="renderLaporan()"><option value="">Semua Motor</option></select>
-              <select id="lap-filter-staff" onchange="renderLaporan()"><option value="">Semua Staff</option><option>Admin</option><option>Staff</option></select>
+              <select id="lap-filter-staff" onchange="renderLaporan()"><option value="">Semua Staff</option><option>Admin</option></select>
             </div>
             <button class="btn btn-green-solid" onclick="downloadFiltered()">
               <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1406,7 +1402,13 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
   <div class="struk-modal">
     <div class="struk-header">
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
-      <div class="struk-header-sub">Stasiun Tasikmalaya · Struk Resmi</div>
+      <div class="struk-header-sub">
+        Stasiun Tasikmalaya<br>
+        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
+        Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
+        081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
+      </div>
+      <div class="struk-header-badge">STRUK RESMI SEWA MOTOR</div>
     </div>
     <div class="struk-body" id="struk-content"></div>
     <div class="struk-actions no-print">
@@ -1451,13 +1453,8 @@ let selectedRole = 'admin';
 function selectRole(r){
   selectedRole = r;
   document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('sel'));
-  document.getElementById('role-btn-'+r).classList.add('sel');
-  const hints = {
-    admin: {email:'admin@rentalmotor.com', pass:'admin123'},
-    bos:   {email:'bos@rentalmotor.com',   pass:'bos123'},
-  };
-  document.getElementById('login-email').value = hints[r].email;
-  document.getElementById('login-pass').value  = hints[r].pass;
+  const btn = document.getElementById('role-btn-'+r);
+  if(btn) btn.classList.add('sel');
 }
 
 function doLogin(){
@@ -1497,15 +1494,14 @@ function applyUserUI(){
   document.getElementById('user-display-name').textContent = currentUser.name;
   document.getElementById('user-display-role').textContent = currentUser.role;
   document.getElementById('user-avatar-txt').textContent = currentUser.avatar;
-  const rk = currentUser.roleKey || 'staff';
+  const rk = currentUser.roleKey || 'admin';
   const avatarEl = document.getElementById('user-avatar-txt');
   avatarEl.className = 'user-avatar avatar-'+rk;
   const badgeEl = document.getElementById('user-role-badge');
   const badgeLabels = {admin:'Admin', bos:'Pemilik'};
   badgeEl.textContent = badgeLabels[rk] || rk;
   badgeEl.className = 'role-badge role-badge-'+rk;
-  // Apply body class for role-based visibility
-  document.body.classList.remove('role-admin','role-bos','role-staff');
+  document.body.classList.remove('role-admin','role-bos');
   document.body.classList.add('role-'+rk);
 }
 
@@ -1652,7 +1648,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2587,7 +2583,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
