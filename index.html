@@ -1527,16 +1527,6 @@ function applyUserUI(){
   document.body.classList.add('role-'+rk);
 }
 
-// Check session on load
-if(currentUser){
-  document.getElementById('login-page').classList.remove('show');
-  applyUserUI();
-  loadAllData().then(()=>{
-    buildMotorDropdown();
-    renderDashboard();
-  });
-}
-
 // ===== DARK MODE =====
 let isDark = localStorage.getItem('rm_dark')==='1';
 function applyDark(){
@@ -1554,6 +1544,16 @@ const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 const BUCKET = 'rental-motor';
+
+// Check session on load
+if(currentUser){
+  document.getElementById('login-page').classList.remove('show');
+  applyUserUI();
+  loadAllData().then(()=>{
+    buildMotorDropdown();
+    renderDashboard();
+  });
+}
 
 // ===== DATA =====
 let pesanan = [];
