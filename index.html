@@ -550,35 +550,17 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="login-logo-text">Rental Motor<small>Stasiun Tasikmalaya</small></div>
     </div>
     <div class="login-title">Selamat datang</div>
-    <div class="login-sub">Pilih peran dan masuk ke dashboard</div>
-    <div class="login-role-selector" style="grid-template-columns:1fr 1fr">
-      <div class="role-btn sel" id="role-btn-admin" onclick="selectRole('admin')">
-        <span class="role-btn-icon" style="font-size:22px">
-          <svg viewBox="0 0 24 24" width="22" height="22" style="display:inline-block;vertical-align:middle" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        </span>
-        <div class="role-btn-label">Admin</div>
-      </div>
-      <div class="role-btn" id="role-btn-bos" onclick="selectRole('bos')">
-        <span class="role-btn-icon" style="font-size:22px">
-          <svg viewBox="0 0 24 24" width="22" height="22" style="display:inline-block;vertical-align:middle" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/><rect x="8" y="14" width="8" height="3" rx="1"/></svg>
-        </span>
-        <div class="role-btn-label">Pemilik</div>
-      </div>
-    </div>
+    <div class="login-sub">Masuk ke dashboard rental motor</div>
     <div class="login-fg">
       <label>Email</label>
-      <input type="email" id="login-email" placeholder="email@rentalmotor.com" value="admin@rentalmotor.com">
+      <input type="email" id="login-email" placeholder="Masukkan email..." autocomplete="username">
     </div>
     <div class="login-fg">
       <label>Password</label>
-      <input type="password" id="login-pass" placeholder="••••••••" value="admin123" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="password" id="login-pass" placeholder="Masukkan password..." autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <button class="login-btn" onclick="doLogin()">Masuk ke Dashboard</button>
     <div class="login-error" id="login-error">Email atau password salah. Coba lagi.</div>
-    <div class="login-hint">
-      Admin: admin@rentalmotor.com / admin123<br>
-      Pemilik: bos@rentalmotor.com / bos123
-    </div>
   </div>
 </div>
 
