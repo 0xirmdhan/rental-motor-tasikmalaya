@@ -765,7 +765,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         <div class="card-body">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Nama</th><th>HP</th><th>Motor</th><th>Mulai</th><th>Selesai</th><th>Durasi</th><th>Total</th><th>Denda</th><th>Bayar</th><th>Status</th><th>Aksi</th></tr></thead>
+              <thead><tr><th>#</th><th>Nama</th><th>HP</th><th>Motor</th><th>Mulai</th><th>Selesai</th><th>Durasi</th><th>Total</th><th>DP</th><th>Sisa</th><th>Bayar</th><th>Status</th><th>Aksi</th></tr></thead>
               <tbody id="tbl-pesanan"></tbody>
             </table>
           </div>
@@ -1574,6 +1574,13 @@ function formatWaktu(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))re
 function parseWaktu(p){if(p.mulai)return new Date(p.mulai);if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d;}return new Date();}
 function statusPill(s){const m={Aktif:'pill-blue',Selesai:'pill-green',Dibatalkan:'pill-red'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
 function payPill(s){const m={'Transfer Bank':'pill-blue','QRIS':'pill-amber','Tunai':'pill-green'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
+function lunasPill(p){
+  const dp=p.dp||0; const total=p.total||0;
+  if(dp===0||dp>=total) return'<span class="pill pill-green">Lunas</span>';
+  const pct=Math.round((dp/total)*100);
+  const sisa=total-dp;
+  return`<span class="pill pill-amber">DP ${pct}%</span>`;
+}
 
 // Hitung denda keterlambatan
 function hitungDenda(p){
@@ -1734,7 +1741,8 @@ function renderPesanan(){
       <td style="font-size:12px">${formatTgl(p.selesai)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${p.durasi} hari</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">${rp(p.total)}</td>
-      <td>${denda>0?`<span class="pill pill-red">${rp(denda)}</span>`:'<span style="color:var(--text3);font-size:11px">—</span>'}</td>
+      <td>${p.dp>0?`<span style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.dp)}</span>`:lunasPill(p)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">${p.dp>0&&p.dp<p.total?rp(p.sisaBayar||Math.max(0,p.total-p.dp)):'<span style="color:var(--text3)">—</span>'}</td>
       <td>${payPill(p.payment)}</td>
       <td>${statusPill(p.status)}</td>
       <td style="white-space:nowrap">
@@ -1990,7 +1998,9 @@ function simpanPesanan(){
   const namaPerusahaan=jenisPenyewa==='perusahaan'?document.getElementById('new-perusahaan').value.trim():'';
   const ktpNoVal=document.getElementById('new-ktp-no').value.trim();
   const dpVal=parseInt(document.getElementById('new-dp').value)||0;
-  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,ktpNo:ktpNoVal,ktpImg:newKTPData||null,buktiImg:newBuktiData||null,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
+  const sisaBayar=Math.max(0,total-dpVal);
+  const statusLunas=dpVal===0?'Lunas':dpVal>=total?'Lunas':'DP';
+  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpNo:ktpNoVal,ktpImg:newKTPData||null,buktiImg:newBuktiData||null,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
   pesanan.push(entry);
   if(si>=0&&status==='Aktif')stokData[si].avail--;
   saveAll();
