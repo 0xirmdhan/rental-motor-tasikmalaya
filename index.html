@@ -212,7 +212,24 @@ tr:hover td{background:var(--surface2)}
 .fg textarea{resize:vertical;min-height:76px}
 
 /* iOS Safari date/month/week input fix */
-input[type="date"],input[type="month"],input[type="week"]{width:100%;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none}
+input[type="date"],input[type="month"],input[type="week"]{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  -webkit-appearance:none;
+  appearance:none;
+  display:block;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  color:var(--text-body);
+  border-radius:var(--radius);
+  padding:10px 13px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;
+  height:42px;
+  line-height:1.5;
+}
 
 /* PRICE PREVIEW */
 .price-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
@@ -348,52 +365,6 @@ input[type="date"],input[type="month"],input[type="week"]{width:100%;max-width:1
   .rekap-row{grid-template-columns:1fr}
   .menu-btn{display:flex}
 }
-
-/* ===== MOBILE (max 600px) ===== */
-@media(max-width:600px){
-  html,body{overflow-x:hidden;width:100%;max-width:100vw}
-  .main{overflow-x:hidden;width:100%;max-width:100vw;margin-left:0!important;box-sizing:border-box}
-  .content{padding:14px 12px;width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden}
-  .stats-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .stat-card{padding:14px 14px}
-  .stat-value{font-size:20px}
-  .dash-grid{grid-template-columns:1fr}
-  .form-panel{padding:14px 12px;max-width:100%}
-  .form-row,.form-row.three{grid-template-columns:1fr;gap:10px}
-  .form-actions{flex-direction:column}
-  .form-actions .btn{width:100%;justify-content:center}
-  .filter-bar{gap:6px}
-  .filter-bar input{min-width:0;flex:1}
-  .filter-bar select{min-width:0;flex:1}
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-  .card-header{flex-wrap:wrap;gap:8px}
-  .card-header .btn{font-size:11px;padding:6px 10px}
-  .rekap-row{grid-template-columns:1fr}
-  .rekap-period-row{grid-template-columns:1fr 1fr}
-  .rekap-val{font-size:22px}
-  .period-tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .peng-rekap{grid-template-columns:1fr 1fr}
-  .konsumen-stats-grid{grid-template-columns:1fr 1fr!important}
-  .peng-val{font-size:18px}
-  .lap-grid{grid-template-columns:1fr}
-  .stok-grid{grid-template-columns:1fr 1fr}
-  .jatuh-item{flex-direction:column;align-items:flex-start;gap:8px}
-  .jatuh-item > div:last-child{width:100%;display:flex;gap:6px;flex-wrap:wrap}
-  .jatuh-item .btn{flex:1;justify-content:center;font-size:11px}
-  .dp-box{grid-template-columns:1fr 1fr}
-  .wa-template-grid{grid-template-columns:1fr}
-  .modal-bg{padding:8px}
-  .modal-box{padding:18px 14px}
-  .modal-box-lg{padding:16px 12px;max-height:95vh}
-  .modal-row{grid-template-columns:1fr}
-  .struk-actions{flex-direction:column;gap:6px;padding:0 14px 16px}
-  .struk-actions .btn{width:100%;justify-content:center}
-  .topbar-date{display:none}
-  .topbar{padding:0 12px}
-  .toast{bottom:80px;right:8px;left:8px;max-width:none;text-align:center}
-  .login-card{padding:28px 20px;border-radius:16px}
-  .login-title{font-size:20px}
-}
 /* Overlay: hidden by default, shown via JS when sidebar opens */
 .sidebar-overlay{
   display:none;
@@ -517,7 +488,53 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
 .ac-meta{font-size:11px;color:var(--text3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ac-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:100px;background:var(--green-soft);color:var(--green);flex-shrink:0}
 .ac-badge.bl{background:var(--red-soft);color:var(--red)}
-.ac-empty{padding:14px 13px;font-size:12px;color:var(--text3);text-align:center}</style>
+.ac-empty{padding:14px 13px;font-size:12px;color:var(--text3);text-align:center}
+
+/* ===== MOBILE (max 600px) — must be LAST to override all base CSS ===== */
+@media(max-width:600px){
+  html,body{overflow-x:hidden;width:100%;max-width:100vw}
+  .main{overflow-x:hidden;width:100%;max-width:100vw;margin-left:0!important;box-sizing:border-box}
+  .content{padding:14px 12px;width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden}
+  .stats-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat-card{padding:14px 14px}
+  .stat-value{font-size:20px}
+  .dash-grid{grid-template-columns:1fr}
+  .form-panel{padding:14px 12px;max-width:100%}
+  .form-row,.form-row.three{grid-template-columns:1fr;gap:10px}
+  .form-actions{flex-direction:column}
+  .form-actions .btn{width:100%;justify-content:center}
+  .filter-bar{gap:6px}
+  .filter-bar input{min-width:0;flex:1}
+  .filter-bar select{min-width:0;flex:1}
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .card-header{flex-wrap:wrap;gap:8px}
+  .card-header .btn{font-size:11px;padding:6px 10px}
+  .rekap-row{grid-template-columns:1fr}
+  .rekap-period-row{grid-template-columns:1fr 1fr}
+  .rekap-val{font-size:22px}
+  .period-tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .peng-rekap{grid-template-columns:1fr!important}
+  .konsumen-stats-grid{grid-template-columns:1fr 1fr!important}
+  .peng-val{font-size:18px}
+  .lap-grid{grid-template-columns:1fr!important}
+  .stok-grid{grid-template-columns:1fr 1fr}
+  .jatuh-item{flex-direction:column;align-items:flex-start;gap:8px}
+  .jatuh-item > div:last-child{width:100%;display:flex;gap:6px;flex-wrap:wrap}
+  .jatuh-item .btn{flex:1;justify-content:center;font-size:11px}
+  .dp-box{grid-template-columns:1fr 1fr}
+  .wa-template-grid{grid-template-columns:1fr}
+  .modal-bg{padding:8px}
+  .modal-box{padding:18px 14px}
+  .modal-box-lg{padding:16px 12px;max-height:95vh}
+  .modal-row{grid-template-columns:1fr}
+  .struk-actions{flex-direction:column;gap:6px;padding:0 14px 16px}
+  .struk-actions .btn{width:100%;justify-content:center}
+  .topbar-date{display:none}
+  .topbar{padding:0 12px}
+  .toast{bottom:80px;right:8px;left:8px;max-width:none;text-align:center}
+  .login-card{padding:28px 20px;border-radius:16px}
+  .login-title{font-size:20px}
+}</style>
 </head>
 <body>
 
