@@ -2054,7 +2054,7 @@ function renderStok(){
     const pct=s.total>0?Math.round((s.avail/s.total)*100):0;
     const tersewa=s.total-s.avail;
     const color=pct>60?'var(--green)':pct>30?'#d97706':'var(--red)';
-    return`<div class="stok-card"><div class="stok-type">Motor</div><div class="stok-name">${s.name}</div><div class="stok-harga">${rp(s.harga)}/hari</div><div class="stok-bar-wrap"><div class="stok-bar" style="width:${pct}%;background:${color}"></div></div><div class="stok-counts"><span>Tersedia: <strong style="color:${color}">${s.avail}</strong></span><span>Tersewa: <strong>${tersewa}</strong></span><span>Total: <strong>${s.total}</strong></span></div><div style="display:flex;gap:6px"><button class="stok-edit-btn" style="flex:1" onclick="openEditStok(${i})">Update Stok</button><button class="stok-edit-btn" style="background:var(--red-soft);color:var(--red);border:1px solid #fca5a5" onclick="openHapusMotor(${i})">Hapus</button></div></div>`;
+    return`<div class="stok-card"><div class="stok-type">Motor</div><div class="stok-name">${s.name}</div><div class="stok-harga">${rp(s.harga)}/hari</div><div class="stok-bar-wrap"><div class="stok-bar" style="width:${pct}%;background:${color}"></div></div><div class="stok-counts"><span>Tersedia: <strong style="color:${color}">${s.avail}</strong></span><span>Tersewa: <strong>${tersewa}</strong></span><span>Total: <strong>${s.total}</strong></span></div><div style="display:flex;gap:6px;align-items:center"><button class="stok-edit-btn" style="flex:1" onclick="openEditStok(${i})">Update Stok</button><button class="stok-edit-btn" style="flex:0 0 36px;padding:7px 0;text-align:center;background:var(--red-soft);color:var(--red);border:1px solid #fca5a5" onclick="openHapusMotor(${i})" title="Hapus motor ini">✕</button></div></div>`;
   }).join('');
   const tb=document.getElementById('tbl-stok-log');
   if(!stokLog.length){tb.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="empty-text">Belum ada perubahan</div></div></td></tr>';return;}
@@ -2866,3 +2866,116 @@ renderDashboard();
 </script>
 </body>
 </html>
+<script>
+// ===== PATCH v21: Sheet Laporan Operasional Gabungan =====
+
+function buildRowsOperasional(penjualanData){
+  // Pendapatan per motor
+  const motorStats = {};
+  stokData.forEach(m => { motorStats[m.name] = {unit:m.name, cnt:0, pendapatan:0, dp:0, sisa:0}; });
+  penjualanData.filter(p=>p.status!=='Dibatalkan').forEach(p=>{
+    if(!motorStats[p.motor]) motorStats[p.motor]={unit:p.motor,cnt:0,pendapatan:0,dp:0,sisa:0};
+    motorStats[p.motor].cnt++;
+    motorStats[p.motor].pendapatan += p.total||0;
+    motorStats[p.motor].dp += p.dp||0;
+    motorStats[p.motor].sisa += Math.max(0,(p.total||0)-(p.dp||0));
+  });
+
+  const totalPendapatan = penjualanData.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
+  const totalPengeluaran = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
+  const labaBersih = totalPendapatan - totalPengeluaran;
+
+  const rows = [];
+
+  rows.push({'KATEGORI':'=== PENDAPATAN PENJUALAN ===','KETERANGAN':'','JUMLAH (Rp)':''});
+  Object.values(motorStats).forEach(m=>{
+    rows.push({'KATEGORI':'Pendapatan','KETERANGAN':m.unit+' ('+m.cnt+' transaksi)','JUMLAH (Rp)':m.pendapatan});
+  });
+  rows.push({'KATEGORI':'TOTAL PENDAPATAN','KETERANGAN':'','JUMLAH (Rp)':totalPendapatan});
+  rows.push({'KATEGORI':'','KETERANGAN':'','JUMLAH (Rp)':''});
+
+  rows.push({'KATEGORI':'=== PENGELUARAN OPERASIONAL ===','KETERANGAN':'','JUMLAH (Rp)':''});
+  if(pengeluaran.length){
+    const katMap = {};
+    pengeluaran.forEach(p=>{ if(!katMap[p.kat]) katMap[p.kat]=0; katMap[p.kat]+=p.jumlah||0; });
+    Object.entries(katMap).forEach(([k,v])=>{
+      rows.push({'KATEGORI':'Pengeluaran','KETERANGAN':k,'JUMLAH (Rp)':v});
+    });
+  } else {
+    rows.push({'KATEGORI':'Pengeluaran','KETERANGAN':'Belum ada pengeluaran dicatat','JUMLAH (Rp)':0});
+  }
+  rows.push({'KATEGORI':'TOTAL PENGELUARAN','KETERANGAN':'','JUMLAH (Rp)':totalPengeluaran});
+  rows.push({'KATEGORI':'','KETERANGAN':'','JUMLAH (Rp)':''});
+  rows.push({'KATEGORI':'LABA BERSIH','KETERANGAN':'Pendapatan − Pengeluaran','JUMLAH (Rp)':labaBersih});
+
+  return rows;
+}
+
+// Override downloadFiltered untuk 3 sheet
+const _origDownloadFiltered = downloadFiltered;
+downloadFiltered = function(){
+  const periodType = document.getElementById('lap-period-type').value;
+  const sts = document.getElementById('lap-status').value;
+  let data = [...pesanan];
+  if(periodType === 'harian'){
+    const tgl = document.getElementById('lap-tanggal').value;
+    if(tgl) data = data.filter(p => (p.mulai||'').startsWith(tgl) || (p.waktu||'').startsWith(tgl));
+  } else if(periodType === 'mingguan'){
+    const wk = document.getElementById('lap-minggu').value;
+    if(wk){
+      const [yr,wn] = wk.split('-W');
+      data = data.filter(p=>{
+        const d = parseWaktu(p);
+        const jan4 = new Date(parseInt(yr),0,4);
+        const weekStart = new Date(jan4);
+        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
+        weekStart.setHours(0,0,0,0);
+        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+        return d >= weekStart && d <= weekEnd;
+      });
+    }
+  } else if(periodType === 'bulanan'){
+    const bln = document.getElementById('lap-bulan').value;
+    if(bln){data=data.filter(p=>{const tglMulai=(p.mulai||'').substring(0,7);let matchWaktu=false;if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d)){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');matchWaktu=(y+'-'+m)===bln;}}return matchWaktu||tglMulai===bln;});}
+  }
+  if(sts) data = data.filter(p=>p.status===sts);
+  if(!data.length){showToast('Tidak ada data sesuai filter');return;}
+
+  const wb = XLSX.utils.book_new();
+
+  // Sheet 1: Database Konsumen
+  const wsDb = XLSX.utils.json_to_sheet([]);
+  addLaporanHeader(wsDb, 11);
+  XLSX.utils.sheet_add_json(wsDb, buildRowsDatabase(getKonsumenUnik(data)), {origin:{r:4,c:0}});
+  applyHeaderStyle(wsDb, 4, 11);
+  wsDb['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:35},{wch:18},{wch:18},{wch:14},{wch:12},{wch:25}];
+  XLSX.utils.book_append_sheet(wb, wsDb, 'Database Konsumen');
+
+  // Sheet 2: Detail Transaksi
+  const wsD = XLSX.utils.json_to_sheet([]);
+  addLaporanHeader(wsD, 21);
+  XLSX.utils.sheet_add_json(wsD, buildRows(data), {origin:{r:4,c:0}});
+  applyHeaderStyle(wsD, 4, 21);
+  wsD['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:12},{wch:30},{wch:12},{wch:25},{wch:20},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, wsD, 'Detail Transaksi');
+
+  // Sheet 3: Laporan Operasional (BARU)
+  const wsOp = XLSX.utils.json_to_sheet([]);
+  XLSX.utils.sheet_add_aoa(wsOp, [
+    ['LAPORAN OPERASIONAL — Rental Motor Tasikmalaya'],
+    ['Digenerate: '+new Date().toLocaleString('id-ID')],
+    [''],
+  ]);
+  XLSX.utils.sheet_add_json(wsOp, buildRowsOperasional(data), {origin:{r:3,c:0}});
+  wsOp['!cols'] = [{wch:28},{wch:38},{wch:20}];
+  // Bold laba bersih row
+  const labaRowIdx = 3 + buildRowsOperasional(data).length - 1;
+  const labaCell = XLSX.utils.encode_cell({r:labaRowIdx, c:2});
+  if(wsOp[labaCell]) wsOp[labaCell].s = {font:{bold:true,color:{rgb:'16a34a'}},fill:{fgColor:{rgb:'dcfce7'}}};
+  XLSX.utils.book_append_sheet(wb, wsOp, 'Laporan Operasional');
+
+  const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
+  XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
+  showToast('✅ Laporan 3 sheet berhasil diunduh!');
+};
+</script>
