@@ -793,7 +793,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1569,7 +1569,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -1888,21 +1888,29 @@ function selPay(el,val){document.querySelectorAll('#pay-grid-wrap .pay-opt').for
 function setAntar(v){newAntarVal=v;document.getElementById('tog-ya').classList.toggle('sel',v==='ya');document.getElementById('tog-tidak').classList.toggle('sel',v==='tidak');document.getElementById('new-alamat-group').style.display=v==='ya'?'flex':'none';}
 
 function calcDP(){
-  // Get total from price display
   const totalStr=(document.getElementById('new-total').textContent||'').replace(/[^\d]/g,'');
   const total=parseInt(totalStr)||0;
-  const dp=parseInt(document.getElementById('new-dp').value)||0;
+  const dpRaw=document.getElementById('new-dp').value;
+  const dp=parseInt(dpRaw)||0;
   const statusEl=document.getElementById('new-status-lunas');
   const preview=document.getElementById('dp-preview');
-  if(total<=0){statusEl.value='—';statusEl.style.color='';preview.style.display='none';return;}
-  // dp=0 means pay in full (lunas), dp>0 means uang muka
+  // Kalau field DP masih kosong (belum disentuh user), jangan ubah status
+  if(dpRaw===''&&total<=0){statusEl.value='—';statusEl.style.color='';preview.style.display='none';return;}
+  // Kalau total belum dihitung (motor/tanggal belum dipilih)
+  if(total<=0){
+    if(dp===0){statusEl.value='Lunas';statusEl.style.color='var(--green)';}
+    else{statusEl.value='DP Rp '+dp.toLocaleString('id-ID')+' (pilih motor & tanggal dulu)';statusEl.style.color='var(--amber)';}
+    preview.style.display='none';return;
+  }
+  // dp=0 artinya langsung lunas
   if(dp===0||dp>=total){
-    statusEl.value='Lunas';
+    statusEl.value='✓ Lunas';
     statusEl.style.color='var(--green)';
     preview.style.display='none';
   } else {
     const sisa=total-dp;
-    statusEl.value='DP — Sisa '+rp(sisa);
+    const pct=Math.round((dp/total)*100);
+    statusEl.value='DP '+pct+'% — Sisa '+rp(sisa);
     statusEl.style.color='var(--amber)';
     preview.style.display='grid';
     document.getElementById('dp-total-sewa').textContent=rp(total);
@@ -1916,14 +1924,19 @@ function calcEditDP(){
   const dp=parseInt(document.getElementById('e-dp').value)||0;
   const statusEl=document.getElementById('e-status-lunas');
   const preview=document.getElementById('e-dp-preview');
-  if(total<=0){statusEl.value='—';statusEl.style.color='';if(preview)preview.style.display='none';return;}
+  if(total<=0){
+    if(dp===0){statusEl.value='Lunas';statusEl.style.color='var(--green)';}
+    else{statusEl.value='DP '+rp(dp);statusEl.style.color='var(--amber)';}
+    if(preview)preview.style.display='none';return;
+  }
   if(dp===0||dp>=total){
-    statusEl.value='Lunas';
+    statusEl.value='✓ Lunas';
     statusEl.style.color='var(--green)';
     if(preview)preview.style.display='none';
   } else {
     const sisa=total-dp;
-    statusEl.value='DP — Sisa '+rp(sisa);
+    const pct=Math.round((dp/total)*100);
+    statusEl.value='DP '+pct+'% — Sisa '+rp(sisa);
     statusEl.style.color='var(--amber)';
     if(preview){
       preview.style.display='grid';
