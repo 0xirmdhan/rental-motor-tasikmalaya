@@ -931,7 +931,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
           </div>
         </div>
         <div class="form-actions">
-          <button class="btn btn-dark" onclick="simpanPesanan()">Simpan Pesanan</button>
+          <button class="btn btn-dark" id="btn-simpan-pesanan" onclick="simpanPesanan()">Simpan Pesanan</button>
           <button class="btn btn-ghost" onclick="resetForm()">Reset</button>
         </div>
       </div>
@@ -1948,6 +1948,11 @@ function setFieldError(fgId,hasError,msg){const fg=document.getElementById(fgId)
 function clearFormErrors(){document.querySelectorAll('.fg').forEach(fg=>{fg.classList.remove('has-error');fg.querySelectorAll('input,select,textarea').forEach(el=>el.classList.remove('invalid'));});document.getElementById('pay-grid-wrap')?.classList.remove('invalid-pay');}
 
 function simpanPesanan(){
+  // Cegah double submit
+  const btnSimpan = document.getElementById('btn-simpan-pesanan');
+  if(btnSimpan && btnSimpan.disabled) return;
+  if(btnSimpan){ btnSimpan.disabled=true; btnSimpan.textContent='Menyimpan...'; }
+  function reEnableBtn(){ if(btnSimpan){ btnSimpan.disabled=false; btnSimpan.textContent='Simpan Pesanan'; } }
   clearFormErrors();
   const nama=document.getElementById('new-nama').value.trim();
   const hp=document.getElementById('new-hp').value.trim();
@@ -1972,12 +1977,12 @@ function simpanPesanan(){
   else{const fg=document.getElementById('fg-ktp-no');fg.classList.remove('has-error');fg.querySelector('input').classList.remove('invalid');}
   if(!ktpFile&&!newKTPData){const fg=document.getElementById('fg-ktp-file');fg.classList.add('has-error');document.getElementById('ktp-upload-area-new').style.borderColor='var(--red)';valid=false;}
   else{const fg=document.getElementById('fg-ktp-file');fg.classList.remove('has-error');document.getElementById('ktp-upload-area-new').style.borderColor='';}
-  if(!valid){showToast('Periksa kembali form — ada field yang belum diisi');return;}
+  if(!valid){showToast('⚠️ Periksa kembali form — ada field yang belum diisi');reEnableBtn();return;}
   const [mname,harga]=sel.split('|');
   const dur=Math.ceil((new Date(selesai)-new Date(mulai))/86400000);
-  if(dur<=0){setFieldError('fg-selesai',true,'Tanggal selesai harus setelah tanggal mulai');return;}
+  if(dur<=0){setFieldError('fg-selesai',true,'Tanggal selesai harus setelah tanggal mulai');reEnableBtn();return;}
   const si=stokData.findIndex(s=>s.name===mname);
-  if(status==='Aktif'&&si>=0&&stokData[si].avail<=0){setFieldError('fg-motor',true,'Stok motor ini sedang habis / semua unit tersewa');return;}
+  if(status==='Aktif'&&si>=0&&stokData[si].avail<=0){setFieldError('fg-motor',true,'Stok motor ini sedang habis / semua unit tersewa');reEnableBtn();return;}
   const total=dur*parseInt(harga);
   const alamat=newAntarVal==='ya'?document.getElementById('new-alamat').value.trim():'-';
   const alamatRumah=document.getElementById('new-alamat-rumah').value.trim();
@@ -1990,12 +1995,13 @@ function simpanPesanan(){
   if(si>=0&&status==='Aktif')stokData[si].avail--;
   saveAll();
   document.getElementById('badge-pesanan').textContent=pesanan.length;
-  // Tampilkan modal konfirmasi
+  // Tampilkan modal konfirmasi sukses
   const newIdx=pesanan.length-1;
   const detail=document.getElementById('konfirmasi-simpan-detail');
   if(detail) detail.textContent=nama+' · '+mname+' · '+dur+' hari · '+rp(total);
   window._lastSavedIdx=newIdx;
   document.getElementById('modal-konfirmasi-simpan').classList.add('show');
+  reEnableBtn();
   resetForm();
 }
 
