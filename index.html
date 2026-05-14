@@ -2423,9 +2423,9 @@ async function simpanMotorBaru(){
   if(!total||total<1){document.getElementById('tmfg-total').classList.add('has-error');document.getElementById('tm-total').classList.add('invalid');valid=false;}else{document.getElementById('tmfg-total').classList.remove('has-error');document.getElementById('tm-total').classList.remove('invalid');}
   if(!valid){showToast('Periksa kembali — ada field yang belum diisi');return;}
   if(stokData.some(s=>s.name.toLowerCase()===nama.toLowerCase())){showToast('Motor dengan nama ini sudah ada!');return;}
-  const id=nama.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-  const { error: stokErr } = await supa.from('stok').insert({id,name:nama,harga,total,avail:total});
+  const { data: stokInserted, error: stokErr } = await supa.from('stok').insert({name:nama,harga,total,avail:total}).select().single();
   if(stokErr){ showToast('❌ Gagal tambah motor: '+stokErr.message); return; }
+  const id = stokInserted.id;
   const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
   await supa.from('stok_log').insert(logEntry);
   stokData.push({id,name:nama,harga,total,avail:total});
