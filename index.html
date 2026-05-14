@@ -795,7 +795,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap PIC</label>
+            <label>Nama Lengkap Penyewa</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1668,7 +1668,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2533,9 +2533,11 @@ async function toggleBlacklist(ktpNo, hp){
 }
 
 async function lihatKTPKonsumen(ktpNo, hp){
-  const p=pesanan.find(x=>(x.ktpNo&&x.ktpNo===ktpNo)||(x.hp===hp));
-  const _ktpImg=getKtpImg(p);
-  if(!p||!_ktpImg){showToast('Foto KTP tidak tersedia');return;}
+  // Cari pesanan yang punya foto KTP dulu, fallback ke yang lain
+  const candidates = pesanan.filter(x=>(x.ktpNo&&x.ktpNo===ktpNo)||(x.hp===hp));
+  const p = candidates.find(x=>x.ktpImgUrl) || candidates[0];
+  const _ktpImg = p ? (p.ktpImgUrl || null) : null;
+  if(!_ktpImg){showToast('Foto KTP tidak tersedia — mungkin belum diupload saat input pesanan');return;}
   const w=window.open('','_blank','width=700,height=600');
   w.document.write(`<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${_ktpImg}" style="max-width:100%;max-height:100vh;border-radius:8px">
 <!-- MODAL KONFIRMASI SIMPAN -->
@@ -2601,7 +2603,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -2617,7 +2619,7 @@ function renderKonsumen(){
         :'<span class="pill pill-green">✅ OK</span>'
       }</td>
       <td style="white-space:nowrap">
-        ${ktpNo?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumen('${ktpNo}','${hp}')" title="Lihat KTP"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
+        ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumen('${ktpNo}','${hp}')" title="Lihat KTP"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
         <button class="btn btn-sm ${bl?'btn-ghost':''}${!bl?' btn-ghost':''}" 
           style="${bl?'background:var(--green-soft);color:var(--green);border:1px solid #86efac':'background:var(--red-soft);color:var(--red);border:1px solid #fca5a5'}"
           onclick="toggleBlacklist('${ktpNo}','${hp}')">
