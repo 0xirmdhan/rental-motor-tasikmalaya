@@ -408,6 +408,13 @@ tr:hover td{background:var(--surface2)}
   .lap-grid{grid-template-columns:1fr!important;gap:12px}
   .lap-grid .card{overflow:hidden!important;max-width:100%!important;width:100%!important}
 }
+
+/* GLOBAL OVERFLOW FIX — nothing escapes the viewport */
+*{max-width:100%;word-break:break-word}
+img,video,iframe,table{max-width:100%}
+/* Re-allow tables to scroll horizontally inside their wrapper */
+.table-wrap{max-width:100%;overflow-x:auto}
+.table-wrap table{max-width:none}
 .lap-stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .lap-stat-row:last-child{border-bottom:none;padding-top:14px;font-weight:600}
 .lap-stat-label{color:var(--text2)}
