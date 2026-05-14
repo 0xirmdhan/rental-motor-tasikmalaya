@@ -2219,6 +2219,8 @@ function openEditPesanan(idx){
   document.getElementById('e-mulai').value=p.mulai;document.getElementById('e-selesai').value=p.selesai;
   document.getElementById('e-status').value=p.status;document.getElementById('e-catatan').value=p.catatan||'';
   document.getElementById('e-alamat').value=p.alamat&&p.alamat!=='-'?p.alamat:'';
+  // FIX v22: isi field DP dari data pesanan sebelum calcEdit() dipanggil
+  document.getElementById('e-dp').value=p.dp>0?p.dp:'';
   const eSel=document.getElementById('e-motor');eSel.innerHTML='<option value="">-- Pilih Motor --</option>';
   stokData.forEach(m=>{const opt=document.createElement('option');opt.value=m.name+'|'+m.harga;opt.textContent=m.name+' — '+rp(m.harga)+'/hari';if(m.name===p.motor)opt.selected=true;eSel.appendChild(opt);});
   calcEdit();editPayVal=p.payment||'';
@@ -2261,7 +2263,11 @@ function saveEditPesanan(){
   if(old.status==='Aktif'&&siOld>=0)stokData[siOld].avail=Math.min(stokData[siOld].avail+1,stokData[siOld].total);
   if(status==='Aktif'&&siNew>=0){if(stokData[siNew].avail<=0){setEditFieldError('efg-motor',true,'Stok motor ini habis');return;}stokData[siNew].avail--;}
   const total=dur*parseInt(harga);const alamat=editAntarVal==='ya'?document.getElementById('e-alamat').value.trim():'-';
-  pesanan[curEditIdx]={...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status};
+  // FIX v22: simpan juga dp, sisaBayar, statusLunas
+  const dpVal=parseInt(document.getElementById('e-dp').value)||0;
+  const sisaBayar=dpVal>0&&dpVal<total?total-dpVal:0;
+  const statusLunas=dpVal===0||dpVal>=total?'Lunas':'DP';
+  pesanan[curEditIdx]={...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas};
   saveAll();closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
 }
 function saveStatus(){
