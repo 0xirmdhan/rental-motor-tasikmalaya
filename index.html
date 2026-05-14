@@ -8,6 +8,7 @@
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -534,7 +535,8 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
   .toast{bottom:80px;right:8px;left:8px;max-width:none;text-align:center}
   .login-card{padding:28px 20px;border-radius:16px}
   .login-title{font-size:20px}
-}</style>
+}
+@keyframes spin{to{transform:rotate(360deg)}}</style>
 </head>
 <body>
 
@@ -1492,6 +1494,11 @@ function doLogin(){
   lp.classList.remove('show');
   setTimeout(()=>{
     applyUserUI();
+    loadAllData().then(()=>{
+      buildMotorDropdown();
+      renderDashboard();
+      renderPesanan();
+    });
     showToast('Selamat datang, '+user.name+'!');
   }, 300);
 }
@@ -1524,6 +1531,10 @@ function applyUserUI(){
 if(currentUser){
   document.getElementById('login-page').classList.remove('show');
   applyUserUI();
+  loadAllData().then(()=>{
+    buildMotorDropdown();
+    renderDashboard();
+  });
 }
 
 // ===== DARK MODE =====
@@ -1538,24 +1549,115 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
-// ===== DATA =====
-let pesanan = JSON.parse(localStorage.getItem('rm_pesanan')||'[]');
-let stokData = JSON.parse(localStorage.getItem('rm_stok')||JSON.stringify([
-  {id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},
-  {id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},
-  {id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},
-  {id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},
-  {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4},
-]));
-let stokLog = JSON.parse(localStorage.getItem('rm_stok_log')||'[]');
-let pengeluaran = JSON.parse(localStorage.getItem('rm_pengeluaran')||'[]');
-const DENDA_PER_HARI = 50000; // Rp 50.000/hari keterlambatan
+// ===== SUPABASE INIT =====
+const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+const BUCKET = 'rental-motor';
 
+// ===== DATA =====
+let pesanan = [];
+let stokData = [];
+let stokLog = [];
+let pengeluaran = [];
+const DENDA_PER_HARI = 50000;
+
+// ===== SUPABASE HELPERS =====
+// Upload gambar ke Storage, return public URL atau null
+async function uploadImg(base64DataURL, folder, filename){
+  if(!base64DataURL) return null;
+  try{
+    const res = await fetch(base64DataURL);
+    const blob = await res.blob();
+    const ext = blob.type.includes('png')?'png':'jpg';
+    const path = folder+'/'+filename+'.'+ext;
+    const { error } = await supa.storage.from(BUCKET).upload(path, blob, {upsert:true, contentType:blob.type});
+    if(error){ console.error('Upload img error:',error); return null; }
+    const { data } = supa.storage.from(BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }catch(e){ console.error('uploadImg error:',e); return null; }
+}
+
+// Konversi row DB → format pesanan (camelCase)
+function dbToPesanan(r){
+  return {
+    id: r.id,
+    nama: r.nama, hp: r.hp, alamatRumah: r.alamat_rumah||'',
+    jenisPenyewa: r.jenis_penyewa||'perorangan', namaPerusahaan: r.nama_perusahaan||'',
+    motor: r.motor, mulai: r.mulai, selesai: r.selesai, durasi: r.durasi, total: r.total,
+    payment: r.payment, antar: r.antar, alamat: r.alamat, catatan: r.catatan,
+    status: r.status, dp: r.dp||0, sisaBayar: r.sisa_bayar||0, statusLunas: r.status_lunas||'Lunas',
+    ktpNo: r.ktp_no||'', ktpImgUrl: r.ktp_img_url||null, buktiImgUrl: r.bukti_img_url||null,
+    waktu: r.waktu, inputOleh: r.input_oleh||'Admin',
+    blacklist: r.blacklist||false, catatanBlacklist: r.catatan_blacklist||''
+  };
+}
+
+// Konversi pesanan → format DB (snake_case)
+function pesananToDb(p){
+  return {
+    nama: p.nama, hp: p.hp, alamat_rumah: p.alamatRumah||'',
+    jenis_penyewa: p.jenisPenyewa||'perorangan', nama_perusahaan: p.namaPerusahaan||'',
+    motor: p.motor, mulai: p.mulai, selesai: p.selesai, durasi: p.durasi, total: p.total,
+    payment: p.payment, antar: p.antar, alamat: p.alamat, catatan: p.catatan,
+    status: p.status, dp: p.dp||0, sisa_bayar: p.sisaBayar||0, status_lunas: p.statusLunas||'Lunas',
+    ktp_no: p.ktpNo||'', ktp_img_url: p.ktpImgUrl||null, bukti_img_url: p.buktiImgUrl||null,
+    waktu: p.waktu||new Date().toISOString(), input_oleh: p.inputOleh||'Admin',
+    blacklist: p.blacklist||false, catatan_blacklist: p.catatanBlacklist||''
+  };
+}
+
+// Gambar: ambil URL langsung dari field pesanan (sudah di Supabase Storage)
+function getKtpImg(p){ return p?p.ktpImgUrl||null:null; }
+function getBuktiImg(p){ return p?p.buktiImgUrl||null:null; }
+
+// saveAll: tidak dipakai lagi untuk pesanan, tiap operasi langsung ke Supabase
+// Tapi dipertahankan untuk stok/pengeluaran backup lokal sebagai fallback
 function saveAll(){
-  localStorage.setItem('rm_pesanan',JSON.stringify(pesanan));
   localStorage.setItem('rm_stok',JSON.stringify(stokData));
   localStorage.setItem('rm_stok_log',JSON.stringify(stokLog));
-  localStorage.setItem('rm_pengeluaran',JSON.stringify(pengeluaran));
+}
+
+// Dummy compat functions (dulu untuk localStorage img, sekarang no-op)
+function saveImgSeparate(){}
+function reindexImgKeys(){}
+function removeImgKeys(){}
+
+// ===== LOAD DATA FROM SUPABASE =====
+async function loadAllData(){
+  showLoadingOverlay(true);
+  try{
+    const [rPesanan, rStok, rStokLog, rPeng] = await Promise.all([
+      supa.from('pesanan').select('*').order('created_at', {ascending:false}),
+      supa.from('stok').select('*'),
+      supa.from('stok_log').select('*').order('created_at', {ascending:false}).limit(200),
+      supa.from('pengeluaran').select('*').order('tgl', {ascending:false})
+    ]);
+    if(rPesanan.error) throw rPesanan.error;
+    if(rStok.error) throw rStok.error;
+    pesanan = (rPesanan.data||[]).map(dbToPesanan);
+    stokData = (rStok.data||[]).map(r=>({id:r.id,name:r.name,harga:r.harga,total:r.total,avail:r.avail}));
+    stokLog = (rStokLog.data||[]).map(r=>({motor:r.motor,perubahan:r.perubahan,oleh:r.oleh,waktu:r.waktu}));
+    pengeluaran = (rPeng.data||[]).map(r=>({id:r.id,tgl:r.tgl,kat:r.kat,jumlah:r.jumlah,ket:r.ket,bukti:r.bukti_url,oleh:r.oleh,waktu:r.waktu}));
+    saveAll(); // cache stok lokal
+  }catch(e){
+    console.error('loadAllData error:',e);
+    showToast('⚠️ Gagal koneksi Supabase: '+e.message);
+  }finally{
+    showLoadingOverlay(false);
+  }
+}
+
+function showLoadingOverlay(show){
+  let el = document.getElementById('supa-loading');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'supa-loading';
+    el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px';
+    el.innerHTML='<div style="width:40px;height:40px;border:4px solid #fff3;border-top-color:#2563EB;border-radius:50%;animation:spin .7s linear infinite"></div><div style="color:#fff;font-size:14px;font-weight:600">Memuat data...</div>';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
 }
 
 // ===== HELPERS =====
@@ -1955,12 +2057,12 @@ function calcEditDP(){
 function setFieldError(fgId,hasError,msg){const fg=document.getElementById(fgId);if(!fg)return;const inp=fg.querySelector('input,select,textarea');const errEl=fg.querySelector('.field-error');if(hasError){fg.classList.add('has-error');if(inp)inp.classList.add('invalid');if(errEl&&msg)errEl.textContent=msg;}else{fg.classList.remove('has-error');if(inp)inp.classList.remove('invalid');}}
 function clearFormErrors(){document.querySelectorAll('.fg').forEach(fg=>{fg.classList.remove('has-error');fg.querySelectorAll('input,select,textarea').forEach(el=>el.classList.remove('invalid'));});document.getElementById('pay-grid-wrap')?.classList.remove('invalid-pay');}
 
-function simpanPesanan(){
+async function simpanPesanan(){
   // Cegah double submit
   const btnSimpan = document.getElementById('btn-simpan-pesanan');
   if(btnSimpan && btnSimpan.disabled) return;
   if(btnSimpan){ btnSimpan.disabled=true; btnSimpan.textContent='Menyimpan...'; }
-  function reEnableBtn(){ if(btnSimpan){ btnSimpan.disabled=false; btnSimpan.textContent='Simpan Pesanan'; } }
+  const reEnableBtn = () => { if(btnSimpan){ btnSimpan.disabled=false; btnSimpan.textContent='Simpan Pesanan'; } };
   clearFormErrors();
   const nama=document.getElementById('new-nama').value.trim();
   const hp=document.getElementById('new-hp').value.trim();
@@ -2000,16 +2102,28 @@ function simpanPesanan(){
   const dpVal=parseInt(document.getElementById('new-dp').value)||0;
   const sisaBayar=Math.max(0,total-dpVal);
   const statusLunas=dpVal===0?'Lunas':dpVal>=total?'Lunas':'DP';
-  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpNo:ktpNoVal,ktpImg:newKTPData||null,buktiImg:newBuktiData||null,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
-  pesanan.push(entry);
-  if(si>=0&&status==='Aktif')stokData[si].avail--;
-  saveAll();
+  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpNo:ktpNoVal,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
+  // Upload gambar ke Supabase Storage
+  const ts = Date.now();
+  const ktpUrl  = await uploadImg(newKTPData,   'ktp',   'ktp_'+ts);
+  const buktiUrl= await uploadImg(newBuktiData, 'bukti', 'bukti_'+ts);
+  entry.ktpImgUrl   = ktpUrl;
+  entry.buktiImgUrl = buktiUrl;
+  // Simpan ke Supabase DB
+  const dbRow = pesananToDb(entry);
+  const { data: inserted, error: insErr } = await supa.from('pesanan').insert(dbRow).select().single();
+  if(insErr){ showToast('❌ Gagal simpan: '+insErr.message); reEnableBtn(); return; }
+  entry.id = inserted.id;
+  pesanan.unshift(entry);
+  // Update stok di Supabase
+  if(si>=0&&status==='Aktif'){
+    stokData[si].avail--;
+    await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id);
+  }
   document.getElementById('badge-pesanan').textContent=pesanan.length;
-  // Tampilkan modal konfirmasi sukses
-  const newIdx=pesanan.length-1;
   const detail=document.getElementById('konfirmasi-simpan-detail');
   if(detail) detail.textContent=nama+' · '+mname+' · '+dur+' hari · '+rp(total);
-  window._lastSavedIdx=newIdx;
+  window._lastSavedIdx=0;
   document.getElementById('modal-konfirmasi-simpan').classList.add('show');
   reEnableBtn();
   resetForm();
@@ -2204,11 +2318,16 @@ function renderLaporan(){
 }
 
 // ===== MODAL =====
-function hapusPesanan(idx){
+async function hapusPesanan(idx){
   const p=pesanan[idx];
   if(!confirm(`Hapus pesanan atas nama "${p.nama}" (${p.motor})?\nTindakan ini tidak dapat dibatalkan.`))return;
-  if(p.status==='Aktif'){const si=stokData.findIndex(s=>s.name===p.motor);if(si>=0)stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);}
-  pesanan.splice(idx,1);saveAll();renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
+  const { error } = await supa.from('pesanan').delete().eq('id', p.id);
+  if(error){ showToast('❌ Gagal hapus: '+error.message); return; }
+  if(p.status==='Aktif'){
+    const si=stokData.findIndex(s=>s.name===p.motor);
+    if(si>=0){ stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total); await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id); }
+  }
+  pesanan.splice(idx,1);renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
 }
 function openEditStatus(idx){curEditIdx=idx;document.getElementById('mod-nama').value=pesanan[idx].nama;document.getElementById('mod-status').value=pesanan[idx].status;document.getElementById('modal-status').classList.add('show');}
 
@@ -2245,7 +2364,7 @@ function calcEdit(){
 function selPayEdit(el,val){document.querySelectorAll('#e-pay-grid .pay-opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');editPayVal=val;}
 function setAntarEdit(v){editAntarVal=v;document.getElementById('e-tog-ya').classList.toggle('sel',v==='ya');document.getElementById('e-tog-tidak').classList.toggle('sel',v==='tidak');document.getElementById('e-alamat-group').style.display=v==='ya'?'flex':'none';}
 function setEditFieldError(id,hasError,msg){const fg=document.getElementById(id);if(!fg)return;const inp=fg.querySelector('input,select,textarea');const errEl=fg.querySelector('.field-error');if(hasError){fg.classList.add('has-error');if(inp)inp.classList.add('invalid');if(errEl&&msg)errEl.textContent=msg;}else{fg.classList.remove('has-error');if(inp)inp.classList.remove('invalid');}}
-function saveEditPesanan(){
+async function saveEditPesanan(){
   const nama=document.getElementById('e-nama').value.trim();const hp=document.getElementById('e-hp').value.trim();const sel=document.getElementById('e-motor').value;
   const mulai=document.getElementById('e-mulai').value;const selesai=document.getElementById('e-selesai').value;const status=document.getElementById('e-status').value;const catatan=document.getElementById('e-catatan').value.trim();
   let valid=true;
@@ -2267,21 +2386,34 @@ function saveEditPesanan(){
   const dpVal=parseInt(document.getElementById('e-dp').value)||0;
   const sisaBayar=dpVal>0&&dpVal<total?total-dpVal:0;
   const statusLunas=dpVal===0||dpVal>=total?'Lunas':'DP';
-  pesanan[curEditIdx]={...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas};
-  saveAll();closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
+  // Upload KTP baru jika ada
+  let ktpImgUrl = old.ktpImgUrl || null;
+  if(ktpDataEdit!==null){ ktpImgUrl = await uploadImg(ktpDataEdit,'ktp','ktp_'+old.id)||ktpImgUrl; }
+  const updated = {...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpImgUrl};
+  const dbRow = pesananToDb(updated);
+  const { error } = await supa.from('pesanan').update(dbRow).eq('id', old.id);
+  if(error){ showToast('❌ Gagal update: '+error.message); return; }
+  pesanan[curEditIdx]=updated;
+  // Update stok di Supabase
+  await supa.from('stok').update({avail:stokData[stokData.findIndex(s=>s.name===old.motor)]?.avail??0}).eq('name',old.motor).then(()=>{});
+  await supa.from('stok').update({avail:stokData[stokData.findIndex(s=>s.name===mname)]?.avail??0}).eq('name',mname).then(()=>{});
+  closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
 }
-function saveStatus(){
+async function saveStatus(){
   const oldStatus=pesanan[curEditIdx].status;const newStatus=document.getElementById('mod-status').value;const motor=pesanan[curEditIdx].motor;
   const si=stokData.findIndex(s=>s.name===motor);
   if(si>=0){if(oldStatus==='Aktif'&&newStatus!=='Aktif')stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);if(oldStatus!=='Aktif'&&newStatus==='Aktif'&&stokData[si].avail>0)stokData[si].avail--;}
-  pesanan[curEditIdx].status=newStatus;saveAll();closeModal();renderPesanan();renderDashboard();showToast('Status diperbarui');
+  pesanan[curEditIdx].status=newStatus;
+  await supa.from('pesanan').update({status:newStatus}).eq('id',pesanan[curEditIdx].id);
+  if(si>=0) await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id);
+  closeModal();renderPesanan();renderDashboard();showToast('Status diperbarui');
 }
 function openTambahMotor(){
   ['tm-nama','tm-harga','tm-total'].forEach(id=>document.getElementById(id).value='');
   ['tmfg-nama','tmfg-harga','tmfg-total'].forEach(id=>{const fg=document.getElementById(id);fg.classList.remove('has-error');fg.querySelector('input').classList.remove('invalid');});
   document.getElementById('modal-tambah-motor').classList.add('show');
 }
-function simpanMotorBaru(){
+async function simpanMotorBaru(){
   const nama=document.getElementById('tm-nama').value.trim();
   const harga=parseInt(document.getElementById('tm-harga').value)||0;
   const total=parseInt(document.getElementById('tm-total').value)||0;
@@ -2292,9 +2424,13 @@ function simpanMotorBaru(){
   if(!valid){showToast('Periksa kembali — ada field yang belum diisi');return;}
   if(stokData.some(s=>s.name.toLowerCase()===nama.toLowerCase())){showToast('Motor dengan nama ini sudah ada!');return;}
   const id=nama.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+  const { error: stokErr } = await supa.from('stok').insert({id,name:nama,harga,total,avail:total});
+  if(stokErr){ showToast('❌ Gagal tambah motor: '+stokErr.message); return; }
+  const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
+  await supa.from('stok_log').insert(logEntry);
   stokData.push({id,name:nama,harga,total,avail:total});
-  stokLog.push({waktu:new Date().toLocaleString('id-ID'),motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin'});
-  buildMotorDropdown();saveAll();
+  stokLog.unshift(logEntry);
+  buildMotorDropdown();
   document.getElementById('modal-tambah-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('✅ Motor baru "'+nama+'" berhasil ditambahkan');
 }
@@ -2307,25 +2443,33 @@ function openHapusMotor(i){
   document.getElementById('mod-hapus-motor-name').value=s.name+' ('+rp(s.harga)+'/hari, '+s.total+' unit)';
   document.getElementById('modal-hapus-motor').classList.add('show');
 }
-function konfirmasiHapusMotor(){
+async function konfirmasiHapusMotor(){
   if(hapusMotorIdx===null)return;
-  const nama=stokData[hapusMotorIdx].name;
-  stokLog.push({waktu:new Date().toLocaleString('id-ID'),motor:nama,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin'});
+  const s=stokData[hapusMotorIdx];
+  const { error } = await supa.from('stok').delete().eq('id', s.id);
+  if(error){ showToast('❌ Gagal hapus motor: '+error.message); return; }
+  const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
+  await supa.from('stok_log').insert(logEntry);
+  stokLog.unshift(logEntry);
   stokData.splice(hapusMotorIdx,1);
   hapusMotorIdx=null;
-  buildMotorDropdown();saveAll();
+  buildMotorDropdown();
   document.getElementById('modal-hapus-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('Motor berhasil dihapus');
 }
 function openEditStok(idx){
   curStokIdx=idx;document.getElementById('mod-stok-motor').value=stokData[idx].name;document.getElementById('mod-stok-total').value=stokData[idx].total;document.getElementById('mod-stok-avail').value=stokData[idx].avail;document.getElementById('modal-stok').classList.add('show');
 }
-function saveStok(){
+async function saveStok(){
   const newTotal=parseInt(document.getElementById('mod-stok-total').value)||0;const newAvail=parseInt(document.getElementById('mod-stok-avail').value)||0;
   const old=stokData[curStokIdx];const oleh=currentUser?currentUser.name:'Admin';
-  stokLog.push({waktu:new Date().toLocaleString('id-ID'),motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh});
+  const { error } = await supa.from('stok').update({total:newTotal,avail:Math.min(newAvail,newTotal)}).eq('id',old.id);
+  if(error){ showToast('❌ Gagal update stok: '+error.message); return; }
+  const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID')};
+  await supa.from('stok_log').insert(logEntry);
+  stokLog.unshift(logEntry);
   stokData[curStokIdx].total=newTotal;stokData[curStokIdx].avail=Math.min(newAvail,newTotal);
-  buildMotorDropdown();saveAll();closeModal();renderStok();renderDashboard();showToast('Stok diperbarui');
+  buildMotorDropdown();closeModal();renderStok();renderDashboard();showToast('Stok diperbarui');
 }
 function closeModal(){document.getElementById('modal-status').classList.remove('show');document.getElementById('modal-stok').classList.remove('show');document.getElementById('modal-hapus-motor').classList.remove('show');}
 function closeAllModals(){
@@ -2365,7 +2509,7 @@ function getKonsumenUnik(src){
   return Object.values(map);
 }
 
-function toggleBlacklist(ktpNo, hp){
+async function toggleBlacklist(ktpNo, hp){
   const key=ktpNo||hp;
   // Update semua pesanan dengan key ini
   let target=pesanan.filter(p=>(p.ktpNo&&p.ktpNo===ktpNo)||(p.hp===hp));
@@ -2381,14 +2525,19 @@ function toggleBlacklist(ktpNo, hp){
     target.forEach(p=>{p.blacklist=false;p.catatanBlacklist='';});
     showToast('✅ Status blacklist dihapus');
   }
-  saveAll();renderKonsumen();renderPesanan();
+  // Simpan blacklist ke Supabase
+  const isNowBl = target[0].blacklist;
+  const hp2 = target[0].hp;
+  await supa.from('pesanan').update({blacklist:isNowBl, catatan_blacklist:isNowBl?(target[0].catatanBlacklist||''):''}).eq('hp', hp2);
+  renderKonsumen();renderPesanan();
 }
 
-function lihatKTPKonsumen(ktpNo, hp){
+async function lihatKTPKonsumen(ktpNo, hp){
   const p=pesanan.find(x=>(x.ktpNo&&x.ktpNo===ktpNo)||(x.hp===hp));
-  if(!p||!p.ktpImg){showToast('Foto KTP tidak tersedia');return;}
+  const _ktpImg=getKtpImg(p);
+  if(!p||!_ktpImg){showToast('Foto KTP tidak tersedia');return;}
   const w=window.open('','_blank','width=700,height=600');
-  w.document.write(`<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${p.ktpImg}" style="max-width:100%;max-height:100vh;border-radius:8px">
+  w.document.write(`<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="${_ktpImg}" style="max-width:100%;max-height:100vh;border-radius:8px">
 <!-- MODAL KONFIRMASI SIMPAN -->
 <div class="modal-bg" id="modal-konfirmasi-simpan">
   <div class="modal-box" style="text-align:center;padding:32px 28px">
@@ -2657,15 +2806,27 @@ function backupData(){
 function restoreData(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=function(ev){try{const d=JSON.parse(ev.target.result);if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}if(!confirm('Data saat ini akan diganti. Lanjutkan?'))return;pesanan=d.pesanan||[];stokData=d.stokData||stokData;stokLog=d.stokLog||[];saveAll();buildMotorDropdown();renderDashboard();showToast('Data berhasil dipulihkan');}catch{showToast('Gagal membaca file backup');}};
+  reader.onload=async function(ev){try{const d=JSON.parse(ev.target.result);if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}if(!confirm('Data saat ini akan diganti. Lanjutkan?'))return;pesanan=d.pesanan||[];stokData=d.stokData||stokData;stokLog=d.stokLog||[];
+        showToast('⏳ Mengupload data ke Supabase...');
+        // Bulk insert ke Supabase
+        if(pesanan.length){ await supa.from('pesanan').delete().neq('id',0); await supa.from('pesanan').insert(pesanan.map(pesananToDb)); }
+        if(stokData.length){ for(const s of stokData){ await supa.from('stok').upsert({id:s.id,name:s.name,harga:s.harga,total:s.total,avail:s.avail}); } }
+        buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan ke Supabase');}catch{showToast('Gagal membaca file backup');}};
   reader.readAsText(file);e.target.value='';
 }
-function resetSemuaData(){
+async function resetSemuaData(){
   if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
   if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
-  pesanan=[];stokLog=[];pengeluaran=[];
-  stokData=[{id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},{id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},{id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},{id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},{id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}];
-  saveAll();buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
+  showLoadingOverlay(true);
+  await supa.from('pesanan').delete().neq('id',0);
+  await supa.from('stok_log').delete().neq('id',0);
+  await supa.from('pengeluaran').delete().neq('id',0);
+  // Reset stok ke default
+  const defaultStok=[{id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},{id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},{id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},{id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},{id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}];
+  for(const s of defaultStok){ await supa.from('stok').upsert(s); }
+  pesanan=[];stokLog=[];pengeluaran=[];stokData=defaultStok;
+  showLoadingOverlay(false);
+  buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
 }
 
 // ===== PENGELUARAN =====
@@ -2696,7 +2857,7 @@ function resetFormPengeluaran(){
   pengBuktiData = null;
 }
 
-function tambahPengeluaran(){
+async function tambahPengeluaran(){
   const tgl = document.getElementById('peng-tgl').value;
   const kat = document.getElementById('peng-kat').value;
   const jumlah = parseInt(document.getElementById('peng-jumlah').value)||0;
@@ -2710,18 +2871,24 @@ function tambahPengeluaran(){
     oleh: currentUser ? currentUser.name : 'Admin',
     waktu: new Date().toISOString()
   };
-  pengeluaran.push(entry);
-  saveAll();
+  const { data: inserted, error } = await supa.from('pengeluaran').insert({
+    tgl: entry.tgl, kat: entry.kat, jumlah: entry.jumlah, ket: entry.ket,
+    bukti_url: entry.bukti||null, oleh: entry.oleh, waktu: entry.waktu
+  }).select().single();
+  if(error){ showToast('❌ Gagal simpan pengeluaran: '+error.message); return; }
+  entry.id = inserted.id;
+  pengeluaran.unshift(entry);
   resetFormPengeluaran();
   renderPengeluaran();
   updatePengRekapTop();
   showToast('✅ Pengeluaran berhasil dicatat');
 }
 
-function hapusPengeluaran(id){
+async function hapusPengeluaran(id){
   if(!confirm('Hapus data pengeluaran ini?')) return;
+  const { error } = await supa.from('pengeluaran').delete().eq('id', id);
+  if(error){ showToast('❌ Gagal hapus: '+error.message); return; }
   pengeluaran = pengeluaran.filter(p => p.id !== id);
-  saveAll();
   renderPengeluaran();
   updatePengRekapTop();
   showToast('Pengeluaran dihapus');
@@ -2816,7 +2983,7 @@ function acGetKonsumen(){
         jenisPenyewa: p.jenisPenyewa || 'perorangan',
         namaPerusahaan: p.namaPerusahaan || '',
         ktpNo: p.ktpNo || '',
-        ktpImg: p.ktpImg || null,
+        ktpImg: getKtpImg(p) || null,
         blacklist: p.blacklist || false,
         catatanBl: p.catatanBlacklist || '',
         count: 0,
@@ -2938,7 +3105,7 @@ function acSelect(i){
 
   // KTP image (if previously saved, show preview but don't block — treat as pre-filled)
   if(k.ktpImg){
-    newKTPData = k.ktpImg;
+    newKTPData = k.ktpImg; // sudah diload via getKonsumenUnik
     const prev = document.getElementById('new-ktp-preview');
     prev.src = k.ktpImg;
     prev.classList.add('show');
@@ -2973,31 +3140,8 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 // ===== INIT =====
 buildMotorDropdown();
 renderDashboard();
-</script>
 
-<!-- MODAL KONFIRMASI SIMPAN -->
-<div class="modal-bg" id="modal-konfirmasi-simpan">
-  <div class="modal-box" style="text-align:center;padding:32px 28px">
-    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">✅</div>
-    <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:6px">Pesanan Tersimpan!</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:24px" id="konfirmasi-simpan-detail">—</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <button class="btn btn-wa" style="width:100%;justify-content:center;padding:12px" onclick="konfirmasiKirimWA()">
-        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-        Kirim Konfirmasi via WhatsApp
-      </button>
-      <button class="btn btn-dark" style="width:100%;justify-content:center;padding:12px" onclick="konfirmasiSelesai()">
-        Input Pesanan Baru
-      </button>
-      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="konfirmasiLihatData()">
-        Lihat Data Pesanan
-      </button>
-    </div>
-  </div>
-</div>
-</body>
-</html>
-<script>
+
 // ===== PATCH v21: Sheet Laporan Operasional Gabungan =====
 
 function buildRowsOperasional(penjualanData){
@@ -3043,7 +3187,7 @@ function buildRowsOperasional(penjualanData){
 }
 
 // Override downloadFiltered untuk 3 sheet
-const _origDownloadFiltered = downloadFiltered;
+// Override downloadFiltered
 downloadFiltered = function(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
@@ -3109,4 +3253,28 @@ downloadFiltered = function(){
   XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
   showToast('✅ Laporan 3 sheet berhasil diunduh!');
 };
+</script>
+
+<!-- MODAL KONFIRMASI SIMPAN -->
+<div class="modal-bg" id="modal-konfirmasi-simpan">
+  <div class="modal-box" style="text-align:center;padding:32px 28px">
+    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">✅</div>
+    <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:6px">Pesanan Tersimpan!</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:24px" id="konfirmasi-simpan-detail">—</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-wa" style="width:100%;justify-content:center;padding:12px" onclick="konfirmasiKirimWA()">
+        <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Kirim Konfirmasi via WhatsApp
+      </button>
+      <button class="btn btn-dark" style="width:100%;justify-content:center;padding:12px" onclick="konfirmasiSelesai()">
+        Input Pesanan Baru
+      </button>
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="konfirmasiLihatData()">
+        Lihat Data Pesanan
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
 </script>
