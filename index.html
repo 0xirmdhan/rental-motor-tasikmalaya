@@ -404,6 +404,10 @@ tr:hover td{background:var(--surface2)}
 
 /* LAPORAN */
 .lap-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+@media(max-width:768px){
+  .lap-grid{grid-template-columns:1fr!important;gap:12px}
+  .lap-grid .card{overflow:hidden!important;max-width:100%!important;width:100%!important}
+}
 .lap-stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .lap-stat-row:last-child{border-bottom:none;padding-top:14px;font-weight:600}
 .lap-stat-label{color:var(--text2)}
@@ -1063,7 +1067,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
     <!-- LAPORAN -->
     <div class="page" id="page-laporan">
       <div class="lap-grid">
-        <div class="card" style="overflow:visible">
+        <div class="card">
           <div class="card-header"><div class="card-title">Export Data Pesanan</div></div>
           <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
             <p style="font-size:13px;color:var(--text2);line-height:1.6">Download data pesanan dalam format Excel (.xlsx). Gunakan filter untuk mempersempit data sesuai kebutuhan.</p>
@@ -1093,13 +1097,13 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
             <button class="btn btn-ghost" onclick="downloadExcel()">Download Semua Data</button>
           </div>
         </div>
-        <div class="card" style="overflow:visible">
+        <div class="card">
           <div class="card-header"><div class="card-title">Ringkasan Laporan</div></div>
           <div style="padding:20px" id="lap-summary"></div>
         </div>
       </div>
       <!-- Backup & Restore -->
-      <div class="card" style="overflow:visible">
+      <div class="card">
         <div class="card-header"><div class="card-title">Backup & Restore Data</div></div>
         <div style="padding:20px;display:flex;flex-direction:column;gap:12px">
           <div style="display:flex;gap:8px;flex-wrap:wrap">
