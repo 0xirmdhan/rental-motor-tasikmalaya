@@ -198,7 +198,7 @@ tr:hover td{background:var(--surface2)}
 .pill-gray{background:var(--surface2);color:var(--text2)}
 
 /* FORM */
-.form-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:780px}
+.form-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px}
 .form-section{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
 .form-section:first-child{margin-top:0;padding-top:0;border-top:none}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -793,7 +793,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1569,7 +1569,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2363,7 +2363,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
