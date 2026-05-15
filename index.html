@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <style>:root{color-scheme:light}</style>
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
@@ -60,7 +60,7 @@
 }
 html{background:#f0f4ff;overflow-x:hidden}
 [data-theme="dark"] html,html[data-theme="dark"]{background:#0f1117}
-body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-body);font-size:14px;min-height:100vh;display:flex;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;width:100%;letter-spacing:-.01em}
+body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-body);font-size:14px;min-height:100vh;min-height:-webkit-fill-available;display:flex;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;width:100%;letter-spacing:-.01em}
 
 /* ===== LOGIN PAGE ===== */
 .login-page{display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#2563EB 100%);align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease;opacity:0;pointer-events:none}
@@ -536,6 +536,98 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
   .login-card{padding:28px 20px;border-radius:16px}
   .login-title{font-size:20px}
 }
+
+/* ── Safari/iOS & Android fixes ─────────────────────────────────────────── */
+* { -webkit-box-sizing: border-box; box-sizing: border-box; }
+
+/* Prevent iOS font size inflation */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* iOS Safari tap highlight */
+a, button, select, input, label, [onclick] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Fix iOS input zoom (font-size <16px memicu zoom di Safari) */
+input, select, textarea {
+  font-size: 16px !important;
+}
+@media(min-width:600px){
+  input, select, textarea { font-size: 13.5px !important; }
+}
+
+/* Fix select arrow di Safari */
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px !important;
+}
+
+/* Fix momentum scroll iOS */
+.table-wrap, .modal-box-lg, .modal-box, .content {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix sticky position Safari */
+.topbar { position: -webkit-sticky; position: sticky; top: 0; z-index: 40; }
+
+/* ── Responsive fullwidth fix ───────────────────────────────────────────── */
+.content {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.form-panel {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.page {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Fix form-row di mobile agar tidak terpotong */
+@media(max-width:900px){
+  .form-row { grid-template-columns: 1fr 1fr; }
+  .form-row.three { grid-template-columns: 1fr 1fr; }
+}
+@media(max-width:600px){
+  .form-row, .form-row.two, .form-row.three, .form-row.four {
+    grid-template-columns: 1fr !important;
+  }
+  /* Jam ambil & kembali tetap 2 kolom di mobile */
+  .form-row.jam-row { grid-template-columns: 1fr 1fr !important; }
+  
+  .stats-row { grid-template-columns: 1fr 1fr !important; }
+  .stok-grid { grid-template-columns: 1fr !important; }
+  
+  /* Modal fullscreen di mobile */
+  .modal-bg { padding: 0; align-items: flex-end; }
+  .modal-box, .modal-box-lg {
+    border-radius: 16px 16px 0 0;
+    max-height: 92vh;
+    width: 100%;
+    max-width: 100%;
+  }
+  .struk-modal {
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Fix date input di iOS */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+
 @keyframes spin{to{transform:rotate(360deg)}}</style>
 </head>
 <body>
@@ -788,7 +880,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
           </div>
           <div class="fg" id="fg-hp">
             <label>Nomor HP / WhatsApp</label>
-            <input type="tel" id="new-hp" placeholder="08xxxxxxxxxx" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            <input type="tel" id="new-hp" placeholder="08xxxxxxxxxx">
             <span class="field-error" id="fgerr-hp">Nomor HP tidak valid</span>
           </div>
         </div>
@@ -822,7 +914,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
           </div>
           <div class="fg" id="fg-jam-mulai">
             <label>Jam Ambil</label>
-            <input type="time" id="new-jam-mulai" value="08:00" onchange="calcNew()">
+            <select id="new-jam-mulai" onchange="calcNew()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select>
           </div>
           <div class="fg" id="fg-selesai">
             <label>Tanggal Selesai</label>
@@ -831,7 +923,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
           </div>
           <div class="fg" id="fg-jam-selesai">
             <label>Jam Kembali</label>
-            <input type="time" id="new-jam-selesai" value="08:00" onchange="calcNew()">
+            <select id="new-jam-selesai" onchange="calcNew()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select>
           </div>
         </div>
         <div class="form-row single">
@@ -1331,7 +1423,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
     <div class="modal-section">Data Penyewa</div>
     <div class="modal-row">
       <div class="fg" id="efg-nama"><label>Nama Lengkap</label><input type="text" id="e-nama" placeholder="Nama penyewa"><span class="field-error">Nama wajib diisi</span></div>
-      <div class="fg" id="efg-hp"><label>Nomor HP / WhatsApp</label><input type="tel" id="e-hp" placeholder="08xxxxxxxxxx" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><span class="field-error" id="efg-hp-msg">Nomor HP wajib diisi</span></div>
+      <div class="fg" id="efg-hp"><label>Nomor HP / WhatsApp</label><input type="tel" id="e-hp" placeholder="08xxxxxxxxxx"><span class="field-error" id="efg-hp-msg">Nomor HP wajib diisi</span></div>
     </div>
     <div class="modal-section">Detail Sewa</div>
     <div class="modal-row">
@@ -1340,9 +1432,9 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
     </div>
     <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
-      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="08:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Ambil</label><select id="e-jam-mulai" onchange="calcEdit()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
-      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="08:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Kembali</label><select id="e-jam-selesai" onchange="calcEdit()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select></div>
     </div>
     <div class="modal-row single">
       <div class="fg"><label>Durasi</label><input type="text" id="e-durasi" readonly placeholder="—"></div>
@@ -1577,6 +1669,7 @@ async function doLogin() {
     applyUserUI();
     await loadAllData();
     buildMotorDropdown();
+    initJamSelects();
     renderPesanan();
     renderDashboard();
     showToast('Selamat datang, ' + currentUser.name + '!');
@@ -1646,6 +1739,31 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
+
+// ── Populate select jam 24 jam ───────────────────────────────────────────────
+function buildJamOptions(selectId, defaultVal){
+  const sel = document.getElementById(selectId);
+  if(!sel) return;
+  sel.innerHTML = '';
+  for(let h = 0; h < 24; h++){
+    for(let m of ['00','30']){
+      const val = String(h).padStart(2,'0')+':'+m;
+      const label = String(h).padStart(2,'0')+'.'+m;
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = label;
+      if(val === (defaultVal||'08:00')) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+}
+function initJamSelects(){
+  buildJamOptions('new-jam-mulai','08:00');
+  buildJamOptions('new-jam-selesai','08:00');
+  buildJamOptions('e-jam-mulai','08:00');
+  buildJamOptions('e-jam-selesai','08:00');
+}
+
 // ===== SESSION PERSISTENCE — cek session saat buka app =====
 (async ()=>{
   const {data} = await sb.auth.getSession();
@@ -1656,6 +1774,7 @@ applyDark();
     applyUserUI();
     await loadAllData();
     buildMotorDropdown();
+    initJamSelects();
     renderPesanan();
     renderDashboard();
   } else {
@@ -2425,6 +2544,8 @@ function konfirmasiLihatData(){
 
 function resetForm(){
   ['new-nama','new-hp','new-mulai','new-selesai','new-alamat','new-catatan'].forEach(id=>document.getElementById(id).value='');
+  buildJamOptions('new-jam-mulai','08:00');
+  buildJamOptions('new-jam-selesai','08:00');
   document.getElementById('new-motor').value='';document.getElementById('new-status').value='Aktif';
   document.getElementById('new-durasi').value='';document.getElementById('new-total').textContent='Rp —';document.getElementById('new-motor-name').textContent='—';
   document.querySelectorAll('#pay-grid-wrap .pay-opt').forEach(o=>o.classList.remove('sel'));
@@ -2617,8 +2738,18 @@ function openEditPesanan(idx){
   curEditIdx=idx;const p=pesanan[idx];
   document.getElementById('e-nama').value=p.nama;document.getElementById('e-hp').value=p.hp;
   document.getElementById('e-mulai').value=p.mulai;document.getElementById('e-selesai').value=p.selesai;
-  document.getElementById('e-jam-mulai').value=p.jamMulai||'08:00';
-  document.getElementById('e-jam-selesai').value=p.jamSelesai||'08:00';
+  // Set nilai select jam (bukan input time)
+  const setJam = (id, val) => {
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const v = val||'08:00';
+    // Cari opsi terdekat (rounded ke 30 menit)
+    const [h,m] = v.split(':').map(Number);
+    const rounded = String(h).padStart(2,'0')+':'+(m<30?'00':'30');
+    sel.value = rounded;
+  };
+  setJam('e-jam-mulai', p.jamMulai);
+  setJam('e-jam-selesai', p.jamSelesai);
   document.getElementById('e-status').value=p.status;document.getElementById('e-catatan').value=p.catatan||'';
   document.getElementById('e-alamat').value=p.alamat&&p.alamat!=='-'?p.alamat:'';
   // FIX v22: isi field DP dari data pesanan sebelum calcEdit() dipanggil
