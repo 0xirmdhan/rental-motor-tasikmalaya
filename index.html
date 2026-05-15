@@ -1448,10 +1448,6 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
 // For each user: go to Authentication > Users > edit user > add metadata:
 //   { "name": "Admin Utama", "role": "Administrator", "roleKey": "admin", "avatar": "AD" }
 //   { "name": "Pemilik",     "role": "Pemilik Usaha", "roleKey": "bos",   "avatar": "PO" }
-const ROLE_DEFAULTS = {
-  'admin@rentalmotor.com': {name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
-  'bos@rentalmotor.com':   {name:'Pemilik',     role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
-};
 
 let currentUser = null; // will be set after Supabase session check
 
