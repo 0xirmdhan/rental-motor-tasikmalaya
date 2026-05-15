@@ -837,7 +837,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="fg" id="fg-jam-mulai">
             <label>Jam Ambil</label>
-            <input type="time" id="new-jam-mulai" value="00:00" onchange="calcNew()">
+            <input type="text" id="new-jam-mulai" value="00:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" oninput="formatJamInput(this)" onchange="calcNew()" autocomplete="off">
           </div>
           <div class="fg" id="fg-selesai">
             <label>Tanggal Selesai</label>
@@ -846,7 +846,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="fg" id="fg-jam-selesai">
             <label>Jam Kembali</label>
-            <input type="time" id="new-jam-selesai" value="00:00" onchange="calcNew()">
+            <input type="text" id="new-jam-selesai" value="00:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" oninput="formatJamInput(this)" onchange="calcNew()" autocomplete="off">
           </div>
         </div>
         <div class="form-row single">
@@ -1346,9 +1346,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
-      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="00:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Ambil</label><input type="text" id="e-jam-mulai" value="00:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" oninput="formatJamInput(this)" onchange="calcEdit()" autocomplete="off"></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
-      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="00:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Kembali</label><input type="text" id="e-jam-selesai" value="00:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" oninput="formatJamInput(this)" onchange="calcEdit()" autocomplete="off"></div>
     </div>
     <div class="modal-row single">
       <div class="fg"><label>Durasi</label><input type="text" id="e-durasi" readonly placeholder="—"></div>
@@ -3397,6 +3397,17 @@ function acClose(){
 document.addEventListener('click', function(e){
   if(!e.target.closest('.ac-wrap')) acClose();
 });
+
+
+// ===== FORMAT JAM INPUT 24H =====
+function formatJamInput(el){
+  let v = el.value.replace(/[^0-9]/g,'');
+  if(v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2,4);
+  el.value = v;
+  // validate
+  const match = el.value.match(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/);
+  el.style.borderColor = (el.value.length===5 && match) ? '' : (el.value.length>=5 ? 'var(--red)' : '');
+}
 
 // ===== TOAST =====
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
