@@ -809,17 +809,27 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
             </select>
           </div>
         </div>
-        <div class="form-row three">
+        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
           <div class="fg" id="fg-mulai">
             <label>Tanggal Mulai</label>
             <input type="date" id="new-mulai" onchange="calcNew()">
             <span class="field-error">Tanggal mulai wajib diisi</span>
+          </div>
+          <div class="fg" id="fg-jam-mulai">
+            <label>Jam Ambil</label>
+            <input type="time" id="new-jam-mulai" value="08:00" onchange="calcNew()">
           </div>
           <div class="fg" id="fg-selesai">
             <label>Tanggal Selesai</label>
             <input type="date" id="new-selesai" onchange="calcNew()">
             <span class="field-error">Tanggal selesai wajib diisi</span>
           </div>
+          <div class="fg" id="fg-jam-selesai">
+            <label>Jam Kembali</label>
+            <input type="time" id="new-jam-selesai" value="08:00" onchange="calcNew()">
+          </div>
+        </div>
+        <div class="form-row single">
           <div class="fg">
             <label>Durasi</label>
             <input type="text" id="new-durasi" readonly placeholder="—">
@@ -1110,6 +1120,39 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
           <div style="padding:20px" id="lap-summary"></div>
         </div>
       </div>
+      <!-- PENGATURAN DENDA -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">⚙️ Pengaturan Denda Keterlambatan</div></div>
+        <div style="padding:20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div class="fg" style="flex:1;min-width:200px">
+            <label>Denda per Jam (Rp)</label>
+            <input type="number" id="setting-denda" placeholder="10000" min="0"
+              value="" oninput="previewDenda(this.value)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:var(--text3)">Denda saat ini</span>
+            <span id="denda-current" style="font-size:16px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace"></span>
+          </div>
+          <button class="btn btn-dark" onclick="saveDenda()">Simpan Denda</button>
+        </div>
+      </div>
+
+      <!-- PENGATURAN DENDA -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><div class="card-title">⚙️ Pengaturan Denda Keterlambatan</div></div>
+        <div style="padding:20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div class="fg" style="flex:1;min-width:200px">
+            <label>Denda per Jam (Rp)</label>
+            <input type="number" id="setting-denda" placeholder="10000" min="0" oninput="previewDenda(this.value)">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:var(--text3)">Denda saat ini</span>
+            <span id="denda-current" style="font-size:16px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace"></span>
+          </div>
+          <button class="btn btn-dark" onclick="saveDenda()">Simpan</button>
+        </div>
+      </div>
+
       <!-- Backup & Restore -->
       <div class="card">
         <div class="card-header"><div class="card-title">Backup & Restore Data</div></div>
@@ -1290,9 +1333,13 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="fg" id="efg-motor"><label>Motor</label><select id="e-motor" onchange="calcEdit()"><option value="">-- Pilih Motor --</option></select><span class="field-error">Pilih motor</span></div>
       <div class="fg"><label>Status</label><select id="e-status"><option value="Aktif">Aktif</option><option value="Selesai">Selesai</option><option value="Dibatalkan">Dibatalkan</option></select></div>
     </div>
-    <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr">
+    <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
+      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="08:00" onchange="calcEdit()"></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
+      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="08:00" onchange="calcEdit()"></div>
+    </div>
+    <div class="modal-row single">
       <div class="fg"><label>Durasi</label><input type="text" id="e-durasi" readonly placeholder="—"></div>
     </div>
     <div class="price-box" style="margin-bottom:14px">
@@ -1527,7 +1574,8 @@ let pesanan = [];
 let stokData = [];
 let stokLog = [];
 let pengeluaran = [];
-const DENDA_PER_HARI = 50000;
+const DENDA_PER_HARI = 50000; // tidak dipakai lagi
+let DENDA_PER_JAM = parseInt(localStorage.getItem('rm_denda_perjam')||'10000');
 
 // ===== SUPABASE HELPERS =====
 // Upload gambar — disimpan sebagai base64 di localStorage
@@ -1618,13 +1666,46 @@ function lunasPill(p){
   return`<span class="pill pill-amber">DP ${pct}%</span>`;
 }
 
-// Hitung denda keterlambatan
+// Hitung denda keterlambatan PER JAM
 function hitungDenda(p){
   if(p.status!=='Aktif'||!p.selesai) return 0;
-  const today=new Date(); today.setHours(0,0,0,0);
-  const selesai=new Date(p.selesai); selesai.setHours(0,0,0,0);
-  const selisih=Math.floor((today-selesai)/86400000);
-  return selisih>0?selisih*DENDA_PER_HARI:0;
+  const jamKembali = p.jamSelesai||'08:00';
+  const [hh,mm] = jamKembali.split(':').map(Number);
+  const batasWaktu = new Date(p.selesai);
+  batasWaktu.setHours(hh, mm, 0, 0);
+  const now = new Date();
+  const selisihMs = now - batasWaktu;
+  if(selisihMs <= 0) return 0;
+  const jamTerlambat = Math.ceil(selisihMs / 3600000); // ceil ke atas
+  return jamTerlambat * DENDA_PER_JAM;
+}
+function getJamTerlambat(p){
+  if(p.status!=='Aktif'||!p.selesai) return 0;
+  const jamKembali = p.jamSelesai||'08:00';
+  const [hh,mm] = jamKembali.split(':').map(Number);
+  const batasWaktu = new Date(p.selesai);
+  batasWaktu.setHours(hh, mm, 0, 0);
+  const now = new Date();
+  const selisihMs = now - batasWaktu;
+  if(selisihMs <= 0) return 0;
+  return Math.ceil(selisihMs / 3600000);
+}
+function getSisaWaktu(p){
+  if(p.status!=='Aktif'||!p.selesai) return null;
+  const jamKembali = p.jamSelesai||'08:00';
+  const [hh,mm] = jamKembali.split(':').map(Number);
+  const batasWaktu = new Date(p.selesai);
+  batasWaktu.setHours(hh, mm, 0, 0);
+  const now = new Date();
+  const selisihMs = batasWaktu - now;
+  if(selisihMs <= 0) return null; // sudah lewat
+  const totalMenit = Math.floor(selisihMs / 60000);
+  const hari = Math.floor(totalMenit / 1440);
+  const jam  = Math.floor((totalMenit % 1440) / 60);
+  const menit = totalMenit % 60;
+  if(hari > 0) return hari+'h '+jam+'j '+menit+'m';
+  if(jam > 0)  return jam+'j '+menit+'m';
+  return menit+'m';
 }
 function isTerlambat(p){ return hitungDenda(p)>0; }
 
@@ -1665,7 +1746,7 @@ function goPage(id,btn){
   if(id==='pesanan')renderPesanan();
   if(id==='stok')renderStok();
   if(id==='keuangan')renderKeuangan();
-  if(id==='laporan')renderLaporan();
+  if(id==='laporan'){renderLaporan();setTimeout(initDendaUI,50);}
   if(id==='pengeluaran'){renderPengeluaran();}
   if(id==='konsumen'){renderKonsumen();renderRiwayat();}
   closeSidebar();
@@ -1734,11 +1815,15 @@ function renderDashboard(){
 
   // JATUH TEMPO
   const todayStr=new Date().toISOString().split('T')[0];
-  const jatuhTempo=pesanan.filter(p=>p.selesai===todayStr&&p.status==='Aktif');
-  const terlambat=pesanan.filter(p=>isTerlambat(p));
+  // Tampilkan semua pesanan aktif: terlambat, hari ini, dan 2 hari ke depan
+  const allAktif=pesanan.filter(p=>p.status==='Aktif'&&p.selesai);
+  const allAlert=allAktif.sort((a,b)=>{
+    const da=new Date(a.selesai+(a.jamSelesai?' '+a.jamSelesai:' 08:00'));
+    const db=new Date(b.selesai+(b.jamSelesai?' '+b.jamSelesai:' 08:00'));
+    return da-db;
+  });
   const jBadge=document.getElementById('jatuh-badge');
   const jList=document.getElementById('jatuh-list');
-  const allAlert=[...jatuhTempo,...terlambat.filter(p=>p.selesai!==todayStr)];
   if(!allAlert.length){
     jBadge.textContent='Aman';jBadge.className='jatuh-badge none';
     jList.innerHTML='<div class="jatuh-empty">✅ Tidak ada pesanan yang jatuh tempo atau terlambat.</div>';
@@ -1747,8 +1832,21 @@ function renderDashboard(){
     jList.innerHTML=allAlert.map(p=>{
       const origIdx=pesanan.indexOf(p);
       const denda=hitungDenda(p);
-      const terlambatHari=denda/DENDA_PER_HARI;
-      return`<div class="jatuh-item"><div><div class="jatuh-nama">${p.nama} ${denda>0?'<span class="pill pill-red">Terlambat '+terlambatHari+' hari</span>':''}</div><div class="jatuh-meta">${p.motor} · ${p.durasi} hari · ${rp(p.total)} · ${p.hp}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
+      const jamTerlambat=getJamTerlambat(p);
+      const sisaWaktu=getSisaWaktu(p);
+      const jamKembali=p.jamSelesai||'08:00';
+      let statusBadge='';
+      if(denda>0){
+        statusBadge=`<span class="pill pill-red">⏰ Terlambat ${jamTerlambat} jam</span>`;
+      } else if(sisaWaktu){
+        const totalMenit=Math.floor((new Date(p.selesai+' '+jamKembali)-new Date())/60000);
+        if(totalMenit<=120){
+          statusBadge=`<span class="pill pill-amber">⚡ Sisa ${sisaWaktu}</span>`;
+        } else {
+          statusBadge=`<span class="pill pill-blue">🕐 Sisa ${sisaWaktu}</span>`;
+        }
+      }
+      return`<div class="jatuh-item"><div><div class="jatuh-nama">${p.nama} ${statusBadge}</div><div class="jatuh-meta">${p.motor} · ${p.durasi} hari · Kembali ${formatTgl(p.selesai)} jam ${jamKembali} · ${p.hp}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
     }).join('');
   }
 }
@@ -1806,6 +1904,8 @@ function openStruk(idx){
     <div class="struk-row"><span class="struk-label">Motor</span><span class="struk-val">${p.motor}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Mulai</span><span class="struk-val">${formatTgl(p.mulai)}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Selesai</span><span class="struk-val">${formatTgl(p.selesai)}</span></div>
+    <div class="struk-row"><span class="struk-label">Jam Ambil</span><span class="struk-val">${p.jamMulai||'08:00'}</span></div>
+    <div class="struk-row"><span class="struk-label">Jam Kembali</span><span class="struk-val">${p.jamSelesai||'08:00'}</span></div>
     <div class="struk-row"><span class="struk-label">Durasi Sewa</span><span class="struk-val">${p.durasi} hari</span></div>
     <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${p.payment}</span></div>
     <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${p.antar}</span></div>
@@ -1926,15 +2026,17 @@ function calcNew(){
   const sel=document.getElementById('new-motor').value;
   const m=document.getElementById('new-mulai').value;
   const s=document.getElementById('new-selesai').value;
+  const jm=document.getElementById('new-jam-mulai').value||'08:00';
+  const js=document.getElementById('new-jam-selesai').value||'08:00';
   if(!sel){document.getElementById('new-motor-name').textContent='—';document.getElementById('new-total').textContent='Rp —';document.getElementById('new-durasi').value='';return;}
   const [mname,harga]=sel.split('|');
   document.getElementById('new-motor-name').textContent=mname+' · '+rp(parseInt(harga))+'/hari';
   if(!m||!s){document.getElementById('new-total').textContent='Rp —';document.getElementById('new-durasi').value='';return;}
   const dur=Math.ceil((new Date(s)-new Date(m))/86400000);
   if(dur<=0){document.getElementById('new-durasi').value='Tidak valid';document.getElementById('new-total').textContent='Rp —';return;}
-  document.getElementById('new-durasi').value=dur+' hari';
+  document.getElementById('new-durasi').value=dur+' hari · Ambil '+jm+' → Kembali '+js;
   document.getElementById('new-total').textContent=rp(dur*parseInt(harga));
-  calcDP(); // refresh status lunas whenever total changes
+  calcDP();
 }
 function selPay(el,val){document.querySelectorAll('#pay-grid-wrap .pay-opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');newPayVal=val;}
 function setAntar(v){newAntarVal=v;document.getElementById('tog-ya').classList.toggle('sel',v==='ya');document.getElementById('tog-tidak').classList.toggle('sel',v==='tidak');document.getElementById('new-alamat-group').style.display=v==='ya'?'flex':'none';}
@@ -2047,7 +2149,9 @@ async function simpanPesanan(){
   const dpVal=parseInt(document.getElementById('new-dp').value)||0;
   const sisaBayar=Math.max(0,total-dpVal);
   const statusLunas=dpVal===0?'Lunas':dpVal>=total?'Lunas':'DP';
-  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpNo:ktpNoVal,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
+  const jamMulai=document.getElementById('new-jam-mulai').value||'08:00';
+  const jamSelesai=document.getElementById('new-jam-selesai').value||'08:00';
+  const entry={nama,hp,alamatRumah,jenisPenyewa,namaPerusahaan,motor:mname,mulai,selesai,jamMulai,jamSelesai,durasi:dur,total,payment:newPayVal,antar:newAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpNo:ktpNoVal,waktu:new Date().toISOString(),inputOleh:currentUser?currentUser.name:'Admin',blacklist:false};
   // Upload gambar ke Supabase Storage
   const ts = Date.now();
   const ktpUrl  = await uploadImg(newKTPData,   'ktp',   'ktp_'+ts);
@@ -2275,6 +2379,8 @@ function openEditPesanan(idx){
   curEditIdx=idx;const p=pesanan[idx];
   document.getElementById('e-nama').value=p.nama;document.getElementById('e-hp').value=p.hp;
   document.getElementById('e-mulai').value=p.mulai;document.getElementById('e-selesai').value=p.selesai;
+  document.getElementById('e-jam-mulai').value=p.jamMulai||'08:00';
+  document.getElementById('e-jam-selesai').value=p.jamSelesai||'08:00';
   document.getElementById('e-status').value=p.status;document.getElementById('e-catatan').value=p.catatan||'';
   document.getElementById('e-alamat').value=p.alamat&&p.alamat!=='-'?p.alamat:'';
   // FIX v22: isi field DP dari data pesanan sebelum calcEdit() dipanggil
@@ -2290,15 +2396,20 @@ function openEditPesanan(idx){
   document.getElementById('modal-edit-pesanan').classList.add('show');
 }
 function calcEdit(){
-  const sel=document.getElementById('e-motor').value;const m=document.getElementById('e-mulai').value;const s=document.getElementById('e-selesai').value;
+  const sel=document.getElementById('e-motor').value;
+  const m=document.getElementById('e-mulai').value;
+  const s=document.getElementById('e-selesai').value;
+  const jm=document.getElementById('e-jam-mulai').value||'08:00';
+  const js=document.getElementById('e-jam-selesai').value||'08:00';
   if(!sel){document.getElementById('e-motor-name').textContent='—';document.getElementById('e-total').textContent='Rp —';document.getElementById('e-durasi').value='';return;}
   const [mname,harga]=sel.split('|');
   document.getElementById('e-motor-name').textContent=mname+' · '+rp(parseInt(harga))+'/hari';
   if(!m||!s){document.getElementById('e-total').textContent='Rp —';document.getElementById('e-durasi').value='';return;}
   const dur=Math.ceil((new Date(s)-new Date(m))/86400000);
   if(dur<=0){document.getElementById('e-durasi').value='Tidak valid';document.getElementById('e-total').textContent='Rp —';return;}
-  document.getElementById('e-durasi').value=dur+' hari';document.getElementById('e-total').textContent=rp(dur*parseInt(harga));
-  calcEditDP(); // refresh status lunas
+  document.getElementById('e-durasi').value=dur+' hari · Ambil '+jm+' → Kembali '+js;
+  document.getElementById('e-total').textContent=rp(dur*parseInt(harga));
+  calcEditDP();
 }
 function selPayEdit(el,val){document.querySelectorAll('#e-pay-grid .pay-opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');editPayVal=val;}
 function setAntarEdit(v){editAntarVal=v;document.getElementById('e-tog-ya').classList.toggle('sel',v==='ya');document.getElementById('e-tog-tidak').classList.toggle('sel',v==='tidak');document.getElementById('e-alamat-group').style.display=v==='ya'?'flex':'none';}
@@ -2328,7 +2439,9 @@ async function saveEditPesanan(){
   // Upload KTP baru jika ada
   let ktpImgUrl = old.ktpImgUrl || null;
   if(ktpDataEdit!==null){ ktpImgUrl = await uploadImg(ktpDataEdit,'ktp','ktp_'+old.id)||ktpImgUrl; }
-  const updated = {...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpImgUrl};
+  const eJamMulai=document.getElementById('e-jam-mulai').value||'08:00';
+  const eJamSelesai=document.getElementById('e-jam-selesai').value||'08:00';
+  const updated = {...old,nama,hp,motor:mname,mulai,selesai,jamMulai:eJamMulai,jamSelesai:eJamSelesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpImgUrl};
   const dbRow = pesananToDb(updated);
   pesanan[curEditIdx]=updated;
   saveAll();
@@ -3069,6 +3182,53 @@ document.addEventListener('click', function(e){
 
 // ===== TOAST =====
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+
+// ===== SETTINGS DENDA =====
+function previewDenda(val){
+  const n=parseInt(val)||0;
+  document.getElementById('denda-current').textContent=rp(n)+'/jam';
+}
+function saveDenda(){
+  const val=parseInt(document.getElementById('setting-denda').value)||0;
+  if(val<0){showToast('Denda tidak boleh minus');return;}
+  DENDA_PER_JAM=val;
+  localStorage.setItem('rm_denda_perjam',val);
+  showToast('✅ Denda diperbarui: '+rp(val)+'/jam');
+}
+function initDendaUI(){
+  const el=document.getElementById('setting-denda');
+  if(el){ el.value=DENDA_PER_JAM; previewDenda(DENDA_PER_JAM); }
+}
+
+// Auto-refresh countdown setiap 1 menit
+setInterval(()=>{
+  const dashPage=document.getElementById('page-dashboard');
+  if(dashPage&&dashPage.classList.contains('active')) renderDashboard();
+}, 60000);
+
+// ===== SETTINGS DENDA =====
+function previewDenda(val){
+  const n=parseInt(val)||0;
+  const el=document.getElementById('denda-current');
+  if(el) el.textContent=rp(n)+'/jam';
+}
+function saveDenda(){
+  const val=parseInt(document.getElementById('setting-denda').value)||0;
+  if(val<0){showToast('Denda tidak boleh minus');return;}
+  DENDA_PER_JAM=val;
+  localStorage.setItem('rm_denda_perjam',val);
+  showToast('✅ Denda diperbarui: '+rp(val)+'/jam');
+  renderDashboard();
+}
+function initDendaUI(){
+  const el=document.getElementById('setting-denda');
+  if(el){ el.value=DENDA_PER_JAM; previewDenda(DENDA_PER_JAM); }
+}
+// Auto-refresh countdown setiap 1 menit
+setInterval(()=>{
+  const dashPage=document.getElementById('page-dashboard');
+  if(dashPage&&dashPage.classList.contains('active')) renderDashboard();
+}, 60000);
 
 // ===== INIT =====
 buildMotorDropdown();
