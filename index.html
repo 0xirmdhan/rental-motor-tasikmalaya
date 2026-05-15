@@ -734,6 +734,23 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Motor Paling Laris</div>
+            <div class="card-sub" id="dash-laris-sub">Berdasarkan jumlah pesanan</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" id="dash-laris-cnt-btn" onclick="setLarisMode('cnt')" style="font-size:11px">Jumlah Sewa</button>
+            <button class="btn btn-ghost btn-sm" id="dash-laris-rp-btn" onclick="setLarisMode('rp')" style="font-size:11px">Pendapatan</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:16px 18px">
+          <div id="dash-laris-list"></div>
+          <div id="dash-laris-empty" style="display:none;text-align:center;color:var(--text3);font-size:13px;padding:24px 0">Belum ada data pesanan</div>
+        </div>
+      </div>
     </div>
 
     <!-- DATA PESANAN -->
@@ -1991,6 +2008,8 @@ function renderDashboard(){
     return`<div class="bar-item"><div class="bar-meta"><span class="bar-label">${s.name}</span><span class="bar-val">${s.avail}/${s.total}</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
   }).join('');
 
+  renderLaris();
+
   // JATUH TEMPO
   const todayStr=new Date().toISOString().split('T')[0];
   // Tampilkan semua pesanan aktif: terlambat, hari ini, dan 2 hari ke depan
@@ -2451,6 +2470,63 @@ function handleBuktiUpload(e,mode){
   };
   reader.readAsDataURL(file);
 }
+// ===== GRAFIK MOTOR TERLARIS =====
+let larisMode = 'cnt';
+
+function setLarisMode(mode){
+  larisMode = mode;
+  renderLaris();
+}
+
+function renderLaris(){
+  const list = document.getElementById('dash-laris-list');
+  const empty = document.getElementById('dash-laris-empty');
+  const sub = document.getElementById('dash-laris-sub');
+  const btnCnt = document.getElementById('dash-laris-cnt-btn');
+  const btnRp = document.getElementById('dash-laris-rp-btn');
+  if(!list) return;
+
+  if(btnCnt) btnCnt.style.fontWeight = larisMode==='cnt' ? '600' : '400';
+  if(btnRp)  btnRp.style.fontWeight  = larisMode==='rp'  ? '600' : '400';
+  if(sub) sub.textContent = larisMode==='cnt' ? 'Berdasarkan jumlah pesanan' : 'Berdasarkan total pendapatan';
+
+  const valid = pesanan.filter(p => p.status !== 'Dibatalkan');
+  if(!valid.length){ list.style.display='none'; if(empty) empty.style.display='block'; return; }
+  list.style.display='block'; if(empty) empty.style.display='none';
+
+  const stats = {};
+  stokData.forEach(m => { stats[m.name] = {name: m.name, cnt: 0, rp: 0}; });
+  valid.forEach(p => {
+    if(!stats[p.motor]) stats[p.motor] = {name: p.motor, cnt: 0, rp: 0};
+    stats[p.motor].cnt++;
+    stats[p.motor].rp += p.total || 0;
+  });
+
+  const arr = Object.values(stats).filter(s => s.cnt > 0);
+  arr.sort((a,b) => larisMode==='rp' ? b.rp - a.rp : b.cnt - a.cnt);
+
+  const maxVal = arr.length ? (larisMode==='rp' ? arr[0].rp : arr[0].cnt) : 1;
+  const rankColors = ['#2563eb','#7c3aed','#0891b2','#059669','#d97706','#dc2626'];
+
+  list.innerHTML = arr.map((s,i) => {
+    const val = larisMode==='rp' ? s.rp : s.cnt;
+    const pct = maxVal > 0 ? Math.round(val / maxVal * 100) : 0;
+    const color = rankColors[i] || 'var(--accent)';
+    const valLabel = larisMode==='rp' ? rp(s.rp) : s.cnt + 'x sewa';
+    const rankLabel = i===0 ? ' &nbsp;<span style="font-size:11px;color:'+color+';font-weight:600">Terlaris</span>' : '';
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:13px;font-weight:${i===0?'600':'400'};color:var(--text1);display:flex;align-items:center;gap:7px">
+          <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>
+          ${s.name}${rankLabel}
+        </span>
+        <span style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text2)">${valLabel}</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
 function renderStok(){
   const g=document.getElementById('stok-grid');
   g.innerHTML=stokData.map((s,i)=>{
