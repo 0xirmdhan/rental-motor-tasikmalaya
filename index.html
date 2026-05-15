@@ -90,7 +90,26 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .login-btn:active{transform:translateY(0)}
 .login-error{background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:500;margin-top:10px;display:none}
 .login-error.show{display:block}
-.login-hint{font-size:11px;color:#9ca3af;margin-top:18px;text-align:center;line-height:1.6}
+.login-hint{display:none!important}
+/* PIN overlay for sensitive data */
+.pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.pin-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.35);text-align:center}
+.pin-icon{font-size:36px;margin-bottom:12px}
+.pin-title{font-size:18px;font-weight:700;color:#111827;margin-bottom:6px}
+.pin-sub{font-size:13px;color:#6b7280;margin-bottom:24px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;background:#f9fafb;transition:all .15s}
+.pin-dot.filled{background:#2563EB;border-color:#2563EB}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto 16px}
+.pin-key{padding:14px;border:1.5px solid #e5e7eb;border-radius:12px;background:#f9fafb;cursor:pointer;font-size:18px;font-weight:600;color:#111827;transition:all .15s}
+.pin-key:hover{background:#eff6ff;border-color:#2563EB;color:#2563EB}
+.pin-key:active{transform:scale(.95)}
+.pin-err{font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px}
+.pin-cancel{font-size:12px;color:#9ca3af;cursor:pointer;text-decoration:underline}
+[data-theme="dark"] .pin-box{background:#1a1f2e;color:#e2e8f0}
+[data-theme="dark"] .pin-title{color:#e2e8f0}
+[data-theme="dark"] .pin-key{background:#222840;border-color:#2e3a52;color:#e2e8f0}
+[data-theme="dark"] .pin-key:hover{background:rgba(37,99,235,.2);border-color:#2563EB;color:#60a5fa}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50;transition:transform .25s,background var(--transition),border-color var(--transition);box-shadow:2px 0 12px rgba(0,0,0,.04)}
@@ -547,7 +566,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="login-logo-text">Rental Motor<small>Stasiun Tasikmalaya</small></div>
     </div>
     <div class="login-title">Selamat datang</div>
-    <div class="login-sub">Masuk ke dashboard rental motor</div>
+    <div class="login-sub">Masuk ke dashboard internal</div>
     <div class="login-fg">
       <label>Email</label>
       <input type="email" id="login-email" placeholder="Masukkan email..." autocomplete="username">
@@ -774,7 +793,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1405,8 +1424,6 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
-        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
-        Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
       <div class="struk-header-badge">STRUK RESMI SEWA MOTOR</div>
@@ -1437,17 +1454,154 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
   </div>
 </div>
 
+<!-- PIN OVERLAY untuk akses data sensitif -->
+<div class="pin-overlay" id="pin-overlay" style="display:none">
+  <div class="pin-box">
+    <div class="pin-icon">🔐</div>
+    <div class="pin-title" id="pin-title">Konfirmasi Akses</div>
+    <div class="pin-sub" id="pin-sub">Masukkan PIN untuk mengakses data sensitif</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key" onclick="pinClear()" style="font-size:13px">⌫</button>
+      <button class="pin-key" onclick="pinPress('0')">0</button>
+      <button class="pin-key" onclick="pinCancel()" style="font-size:11px;color:#ef4444">✕</button>
+    </div>
+    <div class="pin-cancel" onclick="pinCancel()">Batal</div>
+  </div>
+</div>
+
 <!-- PRINT AREA (hidden) -->
 <div id="print-area" style="display:none"></div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== AUTH (Supabase Auth — no hardcoded passwords) =====
+// ===== SECURITY: PIN System =====
+// PIN disimpan di memori session saja (tidak di localStorage)
+// Default PIN: 1234 — ganti via fungsi setPINHash() jika perlu
+const PIN_HASH_KEY = 'rm_pin_hash';
+function hashPin(pin){ let h=0; for(let c of pin){h=(h*31+c.charCodeAt(0))&0xffffffff;} return h.toString(16); }
+// Simpan PIN hash default jika belum ada
+if(!sessionStorage.getItem(PIN_HASH_KEY)) sessionStorage.setItem(PIN_HASH_KEY, hashPin('1234'));
+
+let _pinBuffer='', _pinCallback=null, _pinCancellable=true;
+// Berapa kali salah PIN berturut-turut
+let _pinFails=0;
+const PIN_LOCKOUT_AFTER=5;
+let _pinLockedUntil=0;
+
+function requirePin(title, sub, callback, cancellable=true){
+  // Cek lockout
+  if(Date.now()<_pinLockedUntil){
+    const sisa=Math.ceil((_pinLockedUntil-Date.now())/1000);
+    showToast('🔒 Terlalu banyak percobaan salah. Tunggu '+sisa+' detik.');
+    return;
+  }
+  _pinBuffer=''; _pinCallback=callback; _pinCancellable=cancellable;
+  document.getElementById('pin-title').textContent=title||'Konfirmasi Akses';
+  document.getElementById('pin-sub').textContent=sub||'Masukkan PIN 4 digit';
+  document.getElementById('pin-err').textContent='';
+  updatePinDots();
+  document.getElementById('pin-overlay').style.display='flex';
+}
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled',i<_pinBuffer.length);
+  }
+}
+function pinPress(d){
+  if(_pinBuffer.length>=4) return;
+  _pinBuffer+=d;
+  updatePinDots();
+  if(_pinBuffer.length===4) setTimeout(pinVerify,150);
+}
+function pinClear(){
+  _pinBuffer=_pinBuffer.slice(0,-1);
+  updatePinDots();
+  document.getElementById('pin-err').textContent='';
+}
+function pinVerify(){
+  const stored=sessionStorage.getItem(PIN_HASH_KEY)||hashPin('1234');
+  if(hashPin(_pinBuffer)===stored){
+    _pinFails=0;
+    document.getElementById('pin-overlay').style.display='none';
+    if(_pinCallback) _pinCallback();
+    _pinCallback=null;
+  } else {
+    _pinFails++;
+    _pinBuffer='';
+    updatePinDots();
+    if(_pinFails>=PIN_LOCKOUT_AFTER){
+      _pinLockedUntil=Date.now()+30000;
+      document.getElementById('pin-err').textContent='Terlalu banyak percobaan. Dikunci 30 detik.';
+    } else {
+      document.getElementById('pin-err').textContent='PIN salah. Sisa percobaan: '+(PIN_LOCKOUT_AFTER-_pinFails);
+    }
+  }
+}
+function pinCancel(){
+  if(!_pinCancellable) return;
+  _pinBuffer=''; _pinCallback=null;
+  document.getElementById('pin-overlay').style.display='none';
+}
+
+// Akses sudah diverifikasi PIN dalam session ini (berlaku 30 menit)
+let _pinLastVerified = 0;
+const PIN_SESSION_TTL = 30*60*1000; // 30 menit
+
+function requirePinOnce(title, sub, callback){
+  // Jika sudah verify PIN dalam 30 menit terakhir, langsung lanjut
+  if(Date.now()-_pinLastVerified < PIN_SESSION_TTL){
+    callback();
+    return;
+  }
+  requirePin(title, sub, ()=>{
+    _pinLastVerified=Date.now();
+    callback();
+  });
+}
+
+// ===== SECURITY: Data masking =====
+function maskKTP(ktp){ if(!ktp||ktp.length<6) return ktp||'—'; return ktp.slice(0,4)+'••••••••'+ktp.slice(-4); }
+function maskHP(hp){ if(!hp||hp.length<8) return hp||'—'; return hp.slice(0,4)+'••••'+hp.slice(-3); }
+
+// ===== SECURITY: Role-based access control =====
+function isBos(){ return currentUser&&currentUser.roleKey==='bos'; }
+function isAdmin(){ return currentUser&&currentUser.roleKey==='admin'; }
+// Hanya Pemilik (bos) yang boleh Export Excel & Backup
+function checkExportAccess(cb){
+  if(!isBos()&&!isAdmin()){ showToast('⛔ Hanya Admin/Pemilik yang bisa export data'); return; }
+  requirePinOnce('Konfirmasi Export Data','Masukkan PIN untuk mengunduh data pelanggan', cb);
+}
+function checkSensitiveAccess(cb){
+  requirePinOnce('Akses Data Sensitif','Masukkan PIN untuk melihat data KTP / identitas', cb);
+}
+
+
 // Role mapping: defined server-side via user metadata set in Supabase Dashboard
 // For each user: go to Authentication > Users > edit user > add metadata:
 //   { "name": "Admin Utama", "role": "Administrator", "roleKey": "admin", "avatar": "AD" }
 //   { "name": "Pemilik",     "role": "Pemilik Usaha", "roleKey": "bos",   "avatar": "PO" }
+const ROLE_DEFAULTS = {
+  'admin@rentalmotor.com': {name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
+  'bos@rentalmotor.com':   {name:'Pemilik',     role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
+};
 
 let currentUser = null; // will be set after Supabase session check
 
@@ -1521,15 +1675,6 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
-// ===== SUPABASE INIT =====
-// PRIORITY 3 — ROW LEVEL SECURITY (RLS) CHECKLIST:
-// Pastikan RLS sudah aktif di Supabase Dashboard > Table Editor untuk semua tabel:
-//   pesanan      : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
-//   stok         : Enable RLS → Policy: allow authenticated users to SELECT/UPDATE
-//   stok_log     : Enable RLS → Policy: allow authenticated users to SELECT/INSERT
-//   pengeluaran  : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
-// TANPA RLS, siapapun yang punya anon key bisa baca/hapus semua data via API!
-// Anon key boleh publik — itu memang desain Supabase — tapi RLS yang melindunginya.
 const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -1719,7 +1864,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -1888,7 +2033,7 @@ function renderPesanan(){
     return`<tr>
       <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${origIdx+1}</td>
       <td><strong>${esc(p.nama)}</strong></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${esc(p.hp)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${maskHP(esc(p.hp))}</td>
       <td>${esc(p.motor)}</td>
       <td style="font-size:12px">${formatTgl(p.mulai)}</td>
       <td style="font-size:12px">${formatTgl(p.selesai)}</td>
@@ -1941,8 +2086,6 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
-      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
-      <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
     </div>
@@ -2665,14 +2808,14 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
       <td>${namaDisplay}${bl?'<br><span class="pill pill-red" style="margin-top:4px;font-size:10px">⛔ BLACKLIST</span>':''}</td>
-      <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px">${hp}</td>
-      <td style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${k.alamatRumah||''}">${k.alamatRumah||'<span style="color:var(--text3)">—</span>'}</td>
-      <td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">${ktpNo||'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px">${maskHP(hp)}</td>
+      <td style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="[klik KTP untuk lihat alamat]">••••••••••</td>
+      <td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">${ktpNo?maskKTP(ktpNo):'<span style="color:var(--text3)">—</span>'}</td>
       <td><span class="pill ${k.jenisPenyewa==='perusahaan'?'pill-blue':'pill-gray'}">${k.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan'}</span></td>
       <td style="font-size:12px;text-align:center">${k.totalSewa}x</td>
       <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600">${rp(k.totalBayar)}</td>
@@ -2681,7 +2824,7 @@ function renderKonsumen(){
         :'<span class="pill pill-green">✅ OK</span>'
       }</td>
       <td style="white-space:nowrap">
-        ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumen('${ktpNo}','${hp}')" title="Lihat KTP"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
+        ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumenSecure('${ktpNo}','${hp}')" title="Lihat KTP (butuh PIN)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
         <button class="btn btn-sm ${bl?'btn-ghost':''}${!bl?' btn-ghost':''}" 
           style="${bl?'background:var(--green-soft);color:var(--green);border:1px solid #86efac':'background:var(--red-soft);color:var(--red);border:1px solid #fca5a5'}"
           onclick="toggleBlacklist('${ktpNo}','${hp}')">
@@ -2774,7 +2917,14 @@ function buildSheet(rows, colWidths, numHeaderRows){
   return ws;
 }
 
+function lihatKTPKonsumenSecure(ktpNo, hp){
+  checkSensitiveAccess(()=>lihatKTPKonsumen(ktpNo, hp));
+}
+
 function downloadExcel(){
+  checkExportAccess(()=>_downloadExcelImpl());
+}
+function _downloadExcelImpl(){
   if(!pesanan.length){showToast('Belum ada data');return;}
   const wb=XLSX.utils.book_new();
   // Sheet 1: Database Konsumen
@@ -2798,6 +2948,7 @@ function downloadExcel(){
   showToast('Excel berhasil diunduh');
 }
 function downloadExcelKonsumen(){
+  checkExportAccess(()=>{
   const unik=getKonsumenUnik(pesanan);
   if(!unik.length){showToast('Belum ada data konsumen');return;}
   const wb=XLSX.utils.book_new();
@@ -2810,6 +2961,7 @@ function downloadExcelKonsumen(){
   XLSX.utils.book_append_sheet(wb,ws,'Database Konsumen');
   XLSX.writeFile(wb,'Database_Konsumen_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
   showToast('Database konsumen berhasil diunduh');
+  });
 }
 function toggleLapPeriod(){
   const t = document.getElementById('lap-period-type').value;
@@ -2818,6 +2970,9 @@ function toggleLapPeriod(){
   document.getElementById('lap-bulan-group').style.display = t==='bulanan'?'flex':'none';
 }
 function downloadFiltered(){
+  checkExportAccess(()=>_downloadFilteredImpl());
+}
+function _downloadFilteredImpl(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
   let data = [...pesanan];
@@ -2856,9 +3011,11 @@ function downloadFiltered(){
 
 // ===== BACKUP & RESTORE =====
 function backupData(){
+  checkExportAccess(()=>{
   const payload={pesanan,stokData,stokLog,exportedAt:new Date().toISOString(),version:'v6'};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
+  });
 }
 function restoreData(e){
   const file=e.target.files[0];if(!file)return;
@@ -2872,6 +3029,7 @@ function restoreData(e){
   reader.readAsText(file);e.target.value='';
 }
 async function resetSemuaData(){
+  requirePin('⚠️ Reset Semua Data','Masukkan PIN untuk konfirmasi. Tindakan ini tidak bisa dibatalkan!', async ()=>{
   if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
   if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
   showLoadingOverlay(true);
@@ -2884,6 +3042,7 @@ async function resetSemuaData(){
   pesanan=[];stokLog=[];pengeluaran=[];stokData=defaultStok;
   showLoadingOverlay(false);
   buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
+  }, true); // end requirePin
 }
 
 // ===== PENGELUARAN =====
@@ -3243,9 +3402,11 @@ function buildRowsOperasional(penjualanData){
   return rows;
 }
 
-// Override downloadFiltered untuk 3 sheet
-// Override downloadFiltered
+// Override downloadFiltered untuk 3 sheet (v21 patch)
 downloadFiltered = function(){
+  checkExportAccess(()=>_downloadFilteredV21Impl());
+};
+function _downloadFilteredV21Impl(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
   let data = [...pesanan];
@@ -3302,7 +3463,7 @@ downloadFiltered = function(){
   const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
   XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
   showToast('✅ Laporan 3 sheet berhasil diunduh!');
-};
+}
 </script>
 
 <!-- MODAL KONFIRMASI SIMPAN -->
