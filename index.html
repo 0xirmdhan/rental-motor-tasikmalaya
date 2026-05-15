@@ -1598,10 +1598,6 @@ function checkSensitiveAccess(cb){
 // For each user: go to Authentication > Users > edit user > add metadata:
 //   { "name": "Admin Utama", "role": "Administrator", "roleKey": "admin", "avatar": "AD" }
 //   { "name": "Pemilik",     "role": "Pemilik Usaha", "roleKey": "bos",   "avatar": "PO" }
-const ROLE_DEFAULTS = {
-  'admin@rentalmotor.com': {name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
-  'bos@rentalmotor.com':   {name:'Pemilik',     role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
-};
 
 let currentUser = null; // will be set after Supabase session check
 
@@ -1687,7 +1683,7 @@ applyDark();
 const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-const BUCKET = 'rental-motor';
+const BUCKET = 'rental-bucket';
 
 // Check session on load via Supabase (no more sessionStorage)
 (async ()=>{
