@@ -775,7 +775,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap PIC</label>
+            <label>Nama Lengkap Penyewa</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1621,10 +1621,38 @@ function setDbStatus(ok, msg){
   el.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
 
-// Images stored as base64 directly in DB column (keep existing behaviour)
+// Upload gambar ke Supabase Storage bucket 'rental-motor'
 async function uploadImg(base64DataURL, folder, filename){
-  if(!base64DataURL) return null;
-  return base64DataURL;
+  if(!base64DataURL || !sb) return null;
+  try{
+    // Convert base64 ke Blob
+    const arr = base64DataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+    const ext = mime === 'image/png' ? 'png' : 'jpg';
+    const blob = new Blob([u8arr], {type: mime});
+    const path = folder + '/' + filename + '.' + ext;
+
+    // Upload ke bucket rental-motor
+    const {data, error} = await sb.storage
+      .from('rental-motor')
+      .upload(path, blob, {upsert: true, contentType: mime});
+
+    if(error){ console.warn('Storage upload error:', error.message); return base64DataURL; }
+
+    // Ambil public URL
+    const {data: urlData} = sb.storage
+      .from('rental-motor')
+      .getPublicUrl(path);
+
+    return urlData.publicUrl || base64DataURL;
+  }catch(e){
+    console.warn('uploadImg error:', e);
+    return base64DataURL; // fallback ke base64
+  }
 }
 function dbToPesanan(r){ return r; }
 function pesananToDb(p){ return p; }
@@ -1779,7 +1807,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2794,7 +2822,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
