@@ -774,7 +774,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1443,49 +1443,56 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== AUTH =====
-const USERS = {
-  'admin@rentalmotor.com': {pass:'admin123', name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
-  'bos@rentalmotor.com':   {pass:'bos123',   name:'Pemilik',    role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
+// ===== AUTH (Supabase Auth — no hardcoded passwords) =====
+// Role mapping: defined server-side via user metadata set in Supabase Dashboard
+// For each user: go to Authentication > Users > edit user > add metadata:
+//   { "name": "Admin Utama", "role": "Administrator", "roleKey": "admin", "avatar": "AD" }
+//   { "name": "Pemilik",     "role": "Pemilik Usaha", "roleKey": "bos",   "avatar": "PO" }
+const ROLE_DEFAULTS = {
+  'admin@rentalmotor.com': {name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
+  'bos@rentalmotor.com':   {name:'Pemilik',     role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
 };
-let currentUser = JSON.parse(sessionStorage.getItem('rm_user')||'null');
-let selectedRole = 'admin';
 
-function selectRole(r){
-  selectedRole = r;
-  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('sel'));
-  const btn = document.getElementById('role-btn-'+r);
-  if(btn) btn.classList.add('sel');
-}
+let currentUser = null; // will be set after Supabase session check
 
-function doLogin(){
+async function doLogin(){
   const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-error');
-  const user = USERS[email];
-  if(!user || user.pass !== pass){
-    err.classList.add('show');
-    return;
-  }
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('.login-btn');
   err.classList.remove('show');
-  currentUser = {email, name:user.name, role:user.role, roleKey:user.roleKey, avatar:user.avatar};
-  sessionStorage.setItem('rm_user', JSON.stringify(currentUser));
-  const lp = document.getElementById('login-page');
-  lp.classList.remove('show');
-  setTimeout(()=>{
-    applyUserUI();
-    loadAllData().then(()=>{
-      buildMotorDropdown();
-      renderDashboard();
-      renderPesanan();
-    });
-    showToast('Selamat datang, '+user.name+'!');
-  }, 300);
+  btn.textContent = 'Masuk...';
+  btn.disabled = true;
+  try {
+    const { data, error } = await supa.auth.signInWithPassword({ email, password: pass });
+    if(error) throw error;
+    const meta = data.user?.user_metadata || {};
+    const defaults = ROLE_DEFAULTS[email] || {name: email, role:'User', roleKey:'admin', avatar:'US'};
+    currentUser = {
+      email,
+      name:     meta.name     || defaults.name,
+      role:     meta.role     || defaults.role,
+      roleKey:  meta.roleKey  || defaults.roleKey,
+      avatar:   meta.avatar   || defaults.avatar,
+    };
+    document.getElementById('login-page').classList.remove('show');
+    setTimeout(()=>{
+      applyUserUI();
+      loadAllData().then(()=>{ buildMotorDropdown(); renderDashboard(); renderPesanan(); });
+      showToast('Selamat datang, '+currentUser.name+'!');
+    }, 300);
+  } catch(e) {
+    err.textContent = 'Email atau password salah. Coba lagi.';
+    err.classList.add('show');
+  } finally {
+    btn.textContent = 'Masuk ke Dashboard';
+    btn.disabled = false;
+  }
 }
 
-function doLogout(){
+async function doLogout(){
   if(!confirm('Yakin ingin keluar?')) return;
-  sessionStorage.removeItem('rm_user');
+  await supa.auth.signOut();
   currentUser = null;
   document.getElementById('login-page').classList.add('show');
 }
@@ -1519,20 +1526,39 @@ function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1'
 applyDark();
 
 // ===== SUPABASE INIT =====
+// PRIORITY 3 — ROW LEVEL SECURITY (RLS) CHECKLIST:
+// Pastikan RLS sudah aktif di Supabase Dashboard > Table Editor untuk semua tabel:
+//   pesanan      : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
+//   stok         : Enable RLS → Policy: allow authenticated users to SELECT/UPDATE
+//   stok_log     : Enable RLS → Policy: allow authenticated users to SELECT/INSERT
+//   pengeluaran  : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
+// TANPA RLS, siapapun yang punya anon key bisa baca/hapus semua data via API!
+// Anon key boleh publik — itu memang desain Supabase — tapi RLS yang melindunginya.
 const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 const BUCKET = 'rental-motor';
 
-// Check session on load
-if(currentUser){
-  document.getElementById('login-page').classList.remove('show');
-  applyUserUI();
-  loadAllData().then(()=>{
-    buildMotorDropdown();
-    renderDashboard();
-  });
-}
+// Check session on load via Supabase (no more sessionStorage)
+(async ()=>{
+  const { data: { session } } = await supa.auth.getSession();
+  if(session?.user){
+    const email = session.user.email;
+    const meta = session.user.user_metadata || {};
+    const defaults = ROLE_DEFAULTS[email] || {name:email, role:"User", roleKey:"admin", avatar:"US"};
+    currentUser = {
+      email,
+      name:    meta.name    || defaults.name,
+      role:    meta.role    || defaults.role,
+      roleKey: meta.roleKey || defaults.roleKey,
+      avatar:  meta.avatar  || defaults.avatar,
+    };
+    document.getElementById("login-page").classList.remove("show");
+    applyUserUI();
+    loadAllData().then(()=>{ buildMotorDropdown(); renderDashboard(); });
+  }
+})();
+
 
 // ===== DATA =====
 let pesanan = [];
@@ -1642,6 +1668,17 @@ function showLoadingOverlay(show){
 }
 
 // ===== HELPERS =====
+// ===== XSS SANITIZER =====
+// Escapes HTML special chars so user data is never executed as markup
+function esc(str){
+  if(str==null)return "";
+  return String(str)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
 let curEditIdx=null, curStokIdx=null, newAntarVal='tidak', newPayVal='', newKTPData=null, newBuktiData=null, newJenisPenyewa='perorangan';
 
 function setJenisPenyewa(v){
@@ -1649,7 +1686,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -1770,7 +1807,7 @@ function renderDashboard(){
   const tb=document.getElementById('tbl-recent');
   const recent=[...pesanan].reverse().slice(0,5);
   if(!recent.length){tb.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div class="empty-text">Belum ada pesanan</div></div></td></tr>';return;}
-  tb.innerHTML=recent.map(p=>`<tr><td><strong>${p.nama}</strong></td><td>${p.motor}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.total)}</td><td>${statusPill(p.status)}</td></tr>`).join('');
+  tb.innerHTML=recent.map(p=>`<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.motor)}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.total)}</td><td>${statusPill(p.status)}</td></tr>`).join('');
 
   const sl=document.getElementById('dash-stok-list');
   sl.innerHTML=stokData.map(s=>{
@@ -1795,7 +1832,7 @@ function renderDashboard(){
       const origIdx=pesanan.indexOf(p);
       const denda=hitungDenda(p);
       const terlambatHari=denda/DENDA_PER_HARI;
-      return`<div class="jatuh-item"><div><div class="jatuh-nama">${p.nama} ${denda>0?'<span class="pill pill-red">Terlambat '+terlambatHari+' hari</span>':''}</div><div class="jatuh-meta">${p.motor} · ${p.durasi} hari · ${rp(p.total)} · ${p.hp}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
+      return`<div class="jatuh-item"><div><div class="jatuh-nama">${esc(p.nama)} ${denda>0?'<span class="pill pill-red">Terlambat '+terlambatHari+' hari</span>':''}</div><div class="jatuh-meta">${esc(p.motor)} · ${p.durasi} hari · ${rp(p.total)} · ${esc(p.hp)}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
     }).join('');
   }
 }
@@ -1817,17 +1854,17 @@ function renderPesanan(){
     const denda=hitungDenda(p);
     return`<tr>
       <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${origIdx+1}</td>
-      <td><strong>${p.nama}</strong></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${p.hp}</td>
-      <td>${p.motor}</td>
+      <td><strong>${esc(p.nama)}</strong></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${esc(p.hp)}</td>
+      <td>${esc(p.motor)}</td>
       <td style="font-size:12px">${formatTgl(p.mulai)}</td>
       <td style="font-size:12px">${formatTgl(p.selesai)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${p.durasi} hari</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">${rp(p.total)}</td>
       <td>${p.dp>0?`<span style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.dp)}</span>`:lunasPill(p)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">${p.dp>0&&p.dp<p.total?rp(p.sisaBayar||Math.max(0,p.total-p.dp)):'<span style="color:var(--text3)">—</span>'}</td>
-      <td>${payPill(p.payment)}</td>
-      <td>${statusPill(p.status)}</td>
+      <td>${payPill(esc(p.payment))}</td>
+      <td>${statusPill(esc(p.status))}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openStruk(${origIdx})">Struk</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditPesanan(${origIdx})">Edit</button>
@@ -1848,17 +1885,17 @@ function openStruk(idx){
   const terlambatHari=denda>0?denda/DENDA_PER_HARI:0;
   document.getElementById('struk-content').innerHTML=`
     <div class="struk-row"><span class="struk-label">No. Pesanan</span><span class="struk-val">#${String(idx+1).padStart(4,'0')}</span></div>
-    <div class="struk-row"><span class="struk-label">Nama Penyewa</span><span class="struk-val">${p.nama}</span></div>
-    <div class="struk-row"><span class="struk-label">No. HP</span><span class="struk-val">${p.hp}</span></div>
-    <div class="struk-row"><span class="struk-label">Motor</span><span class="struk-val">${p.motor}</span></div>
+    <div class="struk-row"><span class="struk-label">Nama Penyewa</span><span class="struk-val">${esc(p.nama)}</span></div>
+    <div class="struk-row"><span class="struk-label">No. HP</span><span class="struk-val">${esc(p.hp)}</span></div>
+    <div class="struk-row"><span class="struk-label">Motor</span><span class="struk-val">${esc(p.motor)}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Mulai</span><span class="struk-val">${formatTgl(p.mulai)}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Selesai</span><span class="struk-val">${formatTgl(p.selesai)}</span></div>
     <div class="struk-row"><span class="struk-label">Durasi Sewa</span><span class="struk-val">${p.durasi} hari</span></div>
-    <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${p.payment}</span></div>
-    <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${p.antar}</span></div>
-    ${p.alamat&&p.alamat!=='-'?`<div class="struk-row"><span class="struk-label">Alamat</span><span class="struk-val">${p.alamat}</span></div>`:''}
-    <div class="struk-row"><span class="struk-label">Status</span><span class="struk-val">${p.status}</span></div>
-    ${p.catatan?`<div class="struk-row"><span class="struk-label">Catatan</span><span class="struk-val">${p.catatan}</span></div>`:''}
+    <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${esc(p.payment)}</span></div>
+    <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${esc(p.antar)}</span></div>
+    ${p.alamat&&p.alamat!=='-'?`<div class="struk-row"><span class="struk-label">Alamat</span><span class="struk-val">${esc(p.alamat)}</span></div>`:''}
+    <div class="struk-row"><span class="struk-label">Status</span><span class="struk-val">${esc(p.status)}</span></div>
+    ${p.catatan?`<div class="struk-row"><span class="struk-label">Catatan</span><span class="struk-val">${esc(p.catatan)}</span></div>`:''}
     <div class="struk-row"><span class="struk-label">Harga Sewa</span><span class="struk-val">${rp(p.total)}</span></div>
     ${denda>0?`<div class="struk-denda-row"><span>⚠️ Denda Keterlambatan (${terlambatHari} hari × ${rp(DENDA_PER_HARI)})</span><span>${rp(denda)}</span></div>`:''}
     <div class="struk-total-row"><span>TOTAL TAGIHAN</span><span class="struk-val">${rp(totalBayar)}</span></div>
@@ -2595,7 +2632,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -3271,4 +3308,3 @@ downloadFiltered = function(){
 </div>
 </body>
 </html>
-</script>
