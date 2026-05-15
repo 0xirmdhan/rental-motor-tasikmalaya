@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <style>:root{color-scheme:light}</style>
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
@@ -60,13 +60,13 @@
 }
 html{background:#f0f4ff;overflow-x:hidden}
 [data-theme="dark"] html,html[data-theme="dark"]{background:#0f1117}
-body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-body);font-size:14px;min-height:100vh;min-height:-webkit-fill-available;display:flex;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;width:100%;letter-spacing:-.01em}
+body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text-body);font-size:14px;min-height:100vh;min-height:-webkit-fill-available;display:flex;flex-direction:column;transition:background var(--transition),color var(--transition);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-x:hidden;width:100%;box-sizing:border-box;letter-spacing:-.01em}
 
 /* ===== LOGIN PAGE ===== */
 .login-page{display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#2563EB 100%);align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease;opacity:0;pointer-events:none}
 .login-page.show{opacity:1;pointer-events:all}
-#main-app{display:none}
-#main-app.auth-ready{display:block}
+#main-app{display:none;width:100%}
+#main-app.auth-ready{display:flex;width:100%;min-height:100vh}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .login-card{background:#fff;border-radius:20px;padding:44px 40px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.35);animation:slideUp .4s ease .1s both}
@@ -129,7 +129,7 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .logout-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 
 /* MAIN */
-.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh;transition:margin var(--transition);min-width:0;overflow-x:hidden}
+.main{margin-left:var(--sidebar);flex:1;width:0;min-width:0;display:flex;flex-direction:column;min-height:100vh;transition:margin var(--transition);overflow-x:hidden}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;transition:background var(--transition);box-shadow:0 1px 6px rgba(0,0,0,.04)}
 .topbar-left{display:flex;align-items:center;gap:12px}
 .menu-btn{display:none;width:40px;height:40px;border:none;background:none;cursor:pointer;align-items:center;justify-content:center;border-radius:var(--radius);color:var(--text-body);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
@@ -154,10 +154,10 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .btn-wa{background:#25D366;color:#fff;box-shadow:0 2px 8px rgba(37,211,102,.25)}
 .btn-wa:hover{background:#1ebe5d;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,211,102,.3)}
 .btn-sm{padding:6px 12px;font-size:12px}
-.content{padding:28px;flex:1}
+.content{padding:28px;flex:1;width:100%;box-sizing:border-box;min-width:0}
 
 /* PAGE TRANSITION */
-.page{display:none;animation:pageIn .2s ease}
+.page{display:none;animation:pageIn .2s ease;width:100%;box-sizing:border-box}
 .page.active{display:block}
 @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
@@ -199,7 +199,7 @@ tr:hover td{background:#f8faff}
 .pill-gray{background:var(--surface2);color:var(--text2)}
 
 /* FORM */
-.form-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px}
+.form-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;width:100%;box-sizing:border-box}
 .form-section{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)}
 .form-section:first-child{margin-top:0;padding-top:0;border-top:none}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
@@ -361,7 +361,7 @@ input[type="date"],input[type="month"],input[type="week"]{
 @media(max-width:900px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
-  .main{margin-left:0}
+  .main{margin-left:0;width:100%}
   .stats-row{grid-template-columns:1fr 1fr}
   .dash-grid{grid-template-columns:1fr}
   .rekap-row{grid-template-columns:1fr}
@@ -494,7 +494,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
 /* ===== MOBILE (max 600px) — must be LAST to override all base CSS ===== */
 @media(max-width:600px){
   html,body{overflow-x:hidden;width:100%;max-width:100vw}
-  .main{overflow-x:hidden;width:100%;max-width:100vw;margin-left:0!important;box-sizing:border-box}
+  .main{overflow-x:hidden;width:100%;max-width:100vw;margin-left:0!important;box-sizing:border-box;flex:1}
   .content{padding:14px 12px;width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden}
   .stats-row{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
   .stat-card{padding:14px 14px}
@@ -536,99 +536,22 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
   .login-card{padding:28px 20px;border-radius:16px}
   .login-title{font-size:20px}
 }
+@keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── Safari/iOS & Android fixes ─────────────────────────────────────────── */
-* { -webkit-box-sizing: border-box; box-sizing: border-box; }
-
-/* Prevent iOS font size inflation */
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-
-/* iOS Safari tap highlight */
-a, button, select, input, label, [onclick] {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-/* Fix iOS input zoom (font-size <16px memicu zoom di Safari) */
-input, select, textarea {
-  font-size: 16px !important;
-}
-@media(min-width:600px){
-  input, select, textarea { font-size: 13.5px !important; }
-}
-
-/* Fix select arrow di Safari */
-select {
-  -webkit-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  padding-right: 36px !important;
-}
-
-/* Fix momentum scroll iOS */
-.table-wrap, .modal-box-lg, .modal-box, .content {
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Fix sticky position Safari */
-.topbar { position: -webkit-sticky; position: sticky; top: 0; z-index: 40; }
-
-/* ── Responsive fullwidth fix ───────────────────────────────────────────── */
-.content {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.form-panel {
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.page {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Fix form-row di mobile agar tidak terpotong */
-@media(max-width:900px){
-  .form-row { grid-template-columns: 1fr 1fr; }
-  .form-row.three { grid-template-columns: 1fr 1fr; }
-}
+/* ── Cross-browser & Mobile fixes ───────────────────────────────────────── */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+a,button,select,input,label,[onclick]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.topbar{position:-webkit-sticky;position:sticky;top:0;z-index:40}
+.table-wrap,.modal-box-lg,.modal-box{-webkit-overflow-scrolling:touch}
+input[type="date"]{-webkit-appearance:none;appearance:none;min-height:44px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px!important}
 @media(max-width:600px){
-  .form-row, .form-row.two, .form-row.three, .form-row.four {
-    grid-template-columns: 1fr !important;
-  }
-  /* Jam ambil & kembali tetap 2 kolom di mobile */
-  .form-row.jam-row { grid-template-columns: 1fr 1fr !important; }
-  
-  .stats-row { grid-template-columns: 1fr 1fr !important; }
-  .stok-grid { grid-template-columns: 1fr !important; }
-  
-  /* Modal fullscreen di mobile */
-  .modal-bg { padding: 0; align-items: flex-end; }
-  .modal-box, .modal-box-lg {
-    border-radius: 16px 16px 0 0;
-    max-height: 92vh;
-    width: 100%;
-    max-width: 100%;
-  }
-  .struk-modal {
-    border-radius: 16px 16px 0 0;
-    width: 100%;
-    max-width: 100%;
-  }
+  input,select,textarea{font-size:16px!important}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal-box,.modal-box-lg,.struk-modal{border-radius:16px 16px 0 0;max-height:92vh;width:100%;max-width:100%}
+  .stok-grid{grid-template-columns:1fr!important}
 }
-
-/* Fix date input di iOS */
-input[type="date"] {
-  -webkit-appearance: none;
-  appearance: none;
-  min-height: 44px;
-}
-
-@keyframes spin{to{transform:rotate(360deg)}}</style>
+</style>
 </head>
 <body>
 
@@ -914,7 +837,7 @@ input[type="date"] {
           </div>
           <div class="fg" id="fg-jam-mulai">
             <label>Jam Ambil</label>
-            <select id="new-jam-mulai" onchange="calcNew()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select>
+            <input type="time" id="new-jam-mulai" value="08:00" onchange="calcNew()">
           </div>
           <div class="fg" id="fg-selesai">
             <label>Tanggal Selesai</label>
@@ -923,7 +846,7 @@ input[type="date"] {
           </div>
           <div class="fg" id="fg-jam-selesai">
             <label>Jam Kembali</label>
-            <select id="new-jam-selesai" onchange="calcNew()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select>
+            <input type="time" id="new-jam-selesai" value="08:00" onchange="calcNew()">
           </div>
         </div>
         <div class="form-row single">
@@ -1264,7 +1187,7 @@ input[type="date"] {
               Restore dari Backup
               <input type="file" accept=".json" onchange="restoreData(event)" style="display:none">
             </label>
-            <button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:none;margin-left:auto" onclick="showResetModal()">Reset Semua Data</button>
+            <button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:none;margin-left:auto" onclick="resetSemuaData()">Reset Semua Data</button>
           </div>
 
         </div>
@@ -1432,9 +1355,9 @@ input[type="date"] {
     </div>
     <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
-      <div class="fg"><label>Jam Ambil</label><select id="e-jam-mulai" onchange="calcEdit()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select></div>
+      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="08:00" onchange="calcEdit()"></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
-      <div class="fg"><label>Jam Kembali</label><select id="e-jam-selesai" onchange="calcEdit()" style="background:var(--surface2);border:1.5px solid var(--border);color:var(--text-body);border-radius:var(--radius);padding:11px 14px;font-family:'Inter','Plus Jakarta Sans',sans-serif;font-size:13.5px;outline:none;width:100%;-webkit-appearance:none;appearance:none;cursor:pointer"></select></div>
+      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="08:00" onchange="calcEdit()"></div>
     </div>
     <div class="modal-row single">
       <div class="fg"><label>Durasi</label><input type="text" id="e-durasi" readonly placeholder="—"></div>
@@ -1612,96 +1535,34 @@ function buildUserFromSession(session){
   };
 }
 
-// ── Login rate limiting ─────────────────────────────────────────────────────
-const LOGIN_MAX_ATTEMPTS = 3;
-const LOGIN_LOCKOUT_MS   = 5 * 60 * 1000; // 5 menit
-let loginAttempts  = 0;
-let loginLockedAt  = null;
-
-function getRemainingLockout() {
-  if (!loginLockedAt) return 0;
-  const elapsed = Date.now() - loginLockedAt;
-  return elapsed < LOGIN_LOCKOUT_MS ? Math.ceil((LOGIN_LOCKOUT_MS - elapsed) / 1000) : 0;
-}
-
-function resetLoginState(btn) {
-  loginAttempts = 0;
-  loginLockedAt = null;
-  btn.textContent = 'Masuk ke Dashboard';
-  btn.disabled = false;
-}
-
-async function doLogin() {
+async function doLogin(){
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('.login-btn');
 
-  // Cek lockout aktif
-  const remaining = getRemainingLockout();
-  if (remaining > 0) {
-    const menit = Math.floor(remaining / 60);
-    const detik = remaining % 60;
-    err.textContent = `Terlalu banyak percobaan. Coba lagi dalam ${menit > 0 ? menit+'m ' : ''}${detik}d.`;
-    err.classList.add('show');
-    return;
-  }
+  if(!email||!pass){ err.textContent='Email dan password wajib diisi.'; err.classList.add('show'); return; }
 
-  if (!email || !pass) {
-    err.textContent = 'Email dan password wajib diisi.';
-    err.classList.add('show');
-    return;
-  }
-
-  btn.textContent = 'Masuk...';
-  btn.disabled = true;
+  btn.textContent = 'Masuk...'; btn.disabled = true;
   err.classList.remove('show');
 
-  try {
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-    if (error) throw error;
-
-    // Login berhasil — reset counter
-    resetLoginState(btn);
+  try{
+    const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
+    if(error) throw error;
     currentUser = buildUserFromSession(data.session);
     document.getElementById('login-page').classList.remove('show');
     document.getElementById('main-app').classList.add('auth-ready');
     applyUserUI();
     await loadAllData();
     buildMotorDropdown();
-    initJamSelects();
     renderPesanan();
     renderDashboard();
-    showToast('Selamat datang, ' + currentUser.name + '!');
-
-  } catch (e) {
-    loginAttempts++;
-    const sisa = LOGIN_MAX_ATTEMPTS - loginAttempts;
-
-    if (loginAttempts >= LOGIN_MAX_ATTEMPTS) {
-      loginLockedAt = Date.now();
-      loginAttempts = 0;
-      err.textContent = 'Akun dikunci 5 menit karena terlalu banyak percobaan.';
-
-      // Countdown di tombol
-      let countdown = LOGIN_LOCKOUT_MS / 1000;
-      const interval = setInterval(() => {
-        countdown--;
-        const m = Math.floor(countdown / 60);
-        const s = countdown % 60;
-        btn.textContent = `Tunggu ${m > 0 ? m+'m ' : ''}${s}d...`;
-        if (countdown <= 0) {
-          clearInterval(interval);
-          resetLoginState(btn);
-          err.classList.remove('show');
-        }
-      }, 1000);
-    } else {
-      err.textContent = `Email atau password salah. Sisa percobaan: ${sisa}.`;
-      btn.textContent = 'Masuk ke Dashboard';
-      btn.disabled = false;
-    }
+    showToast('Selamat datang, '+currentUser.name+'!');
+  }catch(e){
+    err.textContent = 'Email atau password salah. Coba lagi.';
     err.classList.add('show');
+  }finally{
+    btn.textContent = 'Masuk ke Dashboard'; btn.disabled = false;
   }
 }
 
@@ -1739,31 +1600,6 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
-
-// ── Populate select jam 24 jam ───────────────────────────────────────────────
-function buildJamOptions(selectId, defaultVal){
-  const sel = document.getElementById(selectId);
-  if(!sel) return;
-  sel.innerHTML = '';
-  for(let h = 0; h < 24; h++){
-    for(let m of ['00','30']){
-      const val = String(h).padStart(2,'0')+':'+m;
-      const label = String(h).padStart(2,'0')+'.'+m;
-      const opt = document.createElement('option');
-      opt.value = val;
-      opt.textContent = label;
-      if(val === (defaultVal||'08:00')) opt.selected = true;
-      sel.appendChild(opt);
-    }
-  }
-}
-function initJamSelects(){
-  buildJamOptions('new-jam-mulai','08:00');
-  buildJamOptions('new-jam-selesai','08:00');
-  buildJamOptions('e-jam-mulai','08:00');
-  buildJamOptions('e-jam-selesai','08:00');
-}
-
 // ===== SESSION PERSISTENCE — cek session saat buka app =====
 (async ()=>{
   const {data} = await sb.auth.getSession();
@@ -1774,7 +1610,6 @@ function initJamSelects(){
     applyUserUI();
     await loadAllData();
     buildMotorDropdown();
-    initJamSelects();
     renderPesanan();
     renderDashboard();
   } else {
@@ -2005,7 +1840,7 @@ function setJenisPenyewa(v){
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
-function formatWaktu(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}
+function formatWaktu(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
 function parseWaktu(p){if(p.mulai)return new Date(p.mulai);if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d;}return new Date();}
 function statusPill(s){const m={Aktif:'pill-blue',Selesai:'pill-green',Dibatalkan:'pill-red'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
 function payPill(s){const m={'Transfer Bank':'pill-blue','QRIS':'pill-amber','Tunai':'pill-green'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
@@ -2266,7 +2101,7 @@ function openStruk(idx){
     <div class="struk-row"><span class="struk-label">Harga Sewa</span><span class="struk-val">${rp(p.total)}</span></div>
     ${denda>0?`<div class="struk-denda-row"><span>⚠️ Denda Keterlambatan (${terlambatHari} hari × ${rp(DENDA_PER_HARI)})</span><span>${rp(denda)}</span></div>`:''}
     <div class="struk-total-row"><span>TOTAL TAGIHAN</span><span class="struk-val">${rp(totalBayar)}</span></div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID',{hour12:false})}<br>Terima kasih telah menggunakan layanan kami 🙏</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID')}<br>Terima kasih telah menggunakan layanan kami 🙏</div>
   `;
   document.getElementById('modal-struk').classList.add('show');
 }
@@ -2544,8 +2379,6 @@ function konfirmasiLihatData(){
 
 function resetForm(){
   ['new-nama','new-hp','new-mulai','new-selesai','new-alamat','new-catatan'].forEach(id=>document.getElementById(id).value='');
-  buildJamOptions('new-jam-mulai','08:00');
-  buildJamOptions('new-jam-selesai','08:00');
   document.getElementById('new-motor').value='';document.getElementById('new-status').value='Aktif';
   document.getElementById('new-durasi').value='';document.getElementById('new-total').textContent='Rp —';document.getElementById('new-motor-name').textContent='—';
   document.querySelectorAll('#pay-grid-wrap .pay-opt').forEach(o=>o.classList.remove('sel'));
@@ -2738,18 +2571,8 @@ function openEditPesanan(idx){
   curEditIdx=idx;const p=pesanan[idx];
   document.getElementById('e-nama').value=p.nama;document.getElementById('e-hp').value=p.hp;
   document.getElementById('e-mulai').value=p.mulai;document.getElementById('e-selesai').value=p.selesai;
-  // Set nilai select jam (bukan input time)
-  const setJam = (id, val) => {
-    const sel = document.getElementById(id);
-    if(!sel) return;
-    const v = val||'08:00';
-    // Cari opsi terdekat (rounded ke 30 menit)
-    const [h,m] = v.split(':').map(Number);
-    const rounded = String(h).padStart(2,'0')+':'+(m<30?'00':'30');
-    sel.value = rounded;
-  };
-  setJam('e-jam-mulai', p.jamMulai);
-  setJam('e-jam-selesai', p.jamSelesai);
+  document.getElementById('e-jam-mulai').value=p.jamMulai||'08:00';
+  document.getElementById('e-jam-selesai').value=p.jamSelesai||'08:00';
   document.getElementById('e-status').value=p.status;document.getElementById('e-catatan').value=p.catatan||'';
   document.getElementById('e-alamat').value=p.alamat&&p.alamat!=='-'?p.alamat:'';
   // FIX v22: isi field DP dari data pesanan sebelum calcEdit() dipanggil
@@ -2846,7 +2669,7 @@ async function simpanMotorBaru(){
   if(!valid){showToast('Periksa kembali — ada field yang belum diisi');return;}
   if(stokData.some(s=>s.name.toLowerCase()===nama.toLowerCase())){showToast('Motor dengan nama ini sudah ada!');return;}
   const newId = 'motor_'+Date.now();
-  const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID',{hour12:false})};
+  const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
   stokData.push({id:newId,name:nama,harga,total,avail:total});
   stokLog.unshift(logEntry);
   saveAll();
@@ -2868,7 +2691,7 @@ function openHapusMotor(i){
 async function konfirmasiHapusMotor(){
   if(hapusMotorIdx===null)return;
   const s=stokData[hapusMotorIdx];
-  const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID',{hour12:false})};
+  const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
   const motorId = s.id;
   stokLog.unshift(logEntry);
   stokData.splice(hapusMotorIdx,1);
@@ -2886,7 +2709,7 @@ function openEditStok(idx){
 async function saveStok(){
   const newTotal=parseInt(document.getElementById('mod-stok-total').value)||0;const newAvail=parseInt(document.getElementById('mod-stok-avail').value)||0;
   const old=stokData[curStokIdx];const oleh=currentUser?currentUser.name:'Admin';
-  const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID',{hour12:false})};
+  const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID')};
   stokLog.unshift(logEntry);
   stokData[curStokIdx].total=newTotal;stokData[curStokIdx].avail=Math.min(newAvail,newTotal);
   saveAll();
@@ -3103,7 +2926,7 @@ function addLaporanHeader(ws, numCols){
   XLSX.utils.sheet_add_aoa(ws, [
     ['LAPORAN PENJUALAN'],
     ['RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya'],
-    ['Dicetak: '+new Date().toLocaleString('id-ID',{hour12:false})],
+    ['Dicetak: '+new Date().toLocaleString('id-ID')],
     []
   ], {origin:'A1'});
   if(!ws['!merges'])ws['!merges']=[];
@@ -3117,7 +2940,7 @@ function addLaporanHeader(ws, numCols){
   // Row 2: subtitle — no bg, centered, medium
   ws['A2']={v:'RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya',t:'s',s:{font:{sz:11,color:{rgb:'374151'}},alignment:{horizontal:'center'}}};
   // Row 3: date — no bg, centered, small gray
-  ws['A3']={v:'Dicetak: '+new Date().toLocaleString('id-ID',{hour12:false}),t:'s',s:{font:{sz:10,color:{rgb:'6B7280'}},alignment:{horizontal:'center'}}};
+  ws['A3']={v:'Dicetak: '+new Date().toLocaleString('id-ID'),t:'s',s:{font:{sz:10,color:{rgb:'6B7280'}},alignment:{horizontal:'center'}}};
   ws['!rows']=[{hpt:30},{hpt:18},{hpt:15},{hpt:4}];
 }
 function applyHeaderStyle(ws, headerRow, numCols){
@@ -3226,9 +3049,7 @@ function downloadFiltered(){
 
 // ===== BACKUP & RESTORE =====
 function backupData(){
-  if(!currentUser){ showToast('Login diperlukan untuk backup data'); return; }
-  if(!confirm('Download backup semua data rental?\n\nFile akan berisi seluruh data pesanan, stok, dan pengeluaran.')) return;
-  const payload={pesanan,stokData,stokLog,pengeluaran,exportedAt:new Date().toISOString(),version:'v6',exportedBy:currentUser.name};
+  const payload={pesanan,stokData,stokLog,exportedAt:new Date().toISOString(),version:'v6'};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
 }
@@ -3259,19 +3080,9 @@ async function restoreData(e){
   };
   reader.readAsText(file);e.target.value='';
 }
-function showResetModal(){
-  if(!currentUser){ showToast('Login diperlukan'); return; }
-  document.getElementById('reset-konfirmasi-input').value='';
-  document.getElementById('btn-konfirmasi-reset').disabled=true;
-  document.getElementById('modal-reset-konfirmasi').style.display='flex';
-}
-function tutupResetModal(){
-  document.getElementById('modal-reset-konfirmasi').style.display='none';
-  document.getElementById('reset-konfirmasi-input').value='';
-}
-async function eksekusiReset(){
-  if(document.getElementById('reset-konfirmasi-input').value!=='RESET') return;
-  tutupResetModal();
+async function resetSemuaData(){
+  if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
+  if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
   pesanan=[];stokLog=[];pengeluaran=[];
   stokData=[
     {id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},
@@ -3281,6 +3092,7 @@ async function eksekusiReset(){
     {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}
   ];
   saveAll();
+  // Reset Supabase tables
   if(sb){
     try{
       await sb.from('pesanan').delete().neq('id',0);
@@ -3743,7 +3555,7 @@ downloadFiltered = function(){
   const wsOp = XLSX.utils.json_to_sheet([]);
   XLSX.utils.sheet_add_aoa(wsOp, [
     ['LAPORAN OPERASIONAL — Rental Motor Tasikmalaya'],
-    ['Digenerate: '+new Date().toLocaleString('id-ID',{hour12:false})],
+    ['Digenerate: '+new Date().toLocaleString('id-ID')],
     [''],
   ]);
   XLSX.utils.sheet_add_json(wsOp, buildRowsOperasional(data), {origin:{r:3,c:0}});
@@ -3780,41 +3592,6 @@ downloadFiltered = function(){
     </div>
   </div>
 </div>
-
-<!-- MODAL RESET KONFIRMASI -->
-<div id="modal-reset-konfirmasi" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-      <div style="width:44px;height:44px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#dc2626;fill:none;stroke-width:2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      </div>
-      <div>
-        <div style="font-weight:700;font-size:16px;color:#111">Reset Semua Data</div>
-        <div style="font-size:13px;color:#6b7280;margin-top:2px">Tindakan ini tidak bisa dibatalkan</div>
-      </div>
-    </div>
-    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:13px;color:#b91c1c;margin-bottom:20px;line-height:1.6">
-      ⚠️ Semua data pesanan, pengeluaran, dan log stok akan <strong>dihapus permanen</strong> dari database. Pastikan sudah melakukan backup terlebih dahulu.
-    </div>
-    <div style="margin-bottom:20px">
-      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Ketik <strong>RESET</strong> untuk konfirmasi</label>
-      <input id="reset-konfirmasi-input" type="text" placeholder="Ketik RESET di sini..." 
-        style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box"
-        oninput="document.getElementById('btn-konfirmasi-reset').disabled=this.value!=='RESET'"
-        onkeydown="if(event.key==='Enter'&&this.value==='RESET')eksekusiReset()">
-    </div>
-    <div style="display:flex;gap:10px">
-      <button onclick="tutupResetModal()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#374151">Batal</button>
-      <button id="btn-konfirmasi-reset" onclick="eksekusiReset()" disabled
-        style="flex:1;padding:11px;border:none;border-radius:10px;background:#dc2626;color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:0.4;transition:opacity .15s"
-        onmouseenter="if(!this.disabled)this.style.background='#b91c1c'"
-        onmouseleave="this.style.background='#dc2626'">
-        Ya, Reset Sekarang
-      </button>
-    </div>
-  </div>
-</div>
-<style>#btn-konfirmasi-reset:not([disabled]){opacity:1!important}</style>
 </div><!-- /#main-app -->
 </body>
 </html>
