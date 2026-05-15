@@ -8,7 +8,7 @@
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -90,26 +90,7 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .login-btn:active{transform:translateY(0)}
 .login-error{background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:500;margin-top:10px;display:none}
 .login-error.show{display:block}
-.login-hint{display:none!important}
-/* PIN overlay for sensitive data */
-.pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.pin-box{background:#fff;border-radius:20px;padding:36px 32px;width:100%;max-width:380px;box-shadow:0 32px 80px rgba(0,0,0,.35);text-align:center}
-.pin-icon{font-size:36px;margin-bottom:12px}
-.pin-title{font-size:18px;font-weight:700;color:#111827;margin-bottom:6px}
-.pin-sub{font-size:13px;color:#6b7280;margin-bottom:24px}
-.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #d1d5db;background:#f9fafb;transition:all .15s}
-.pin-dot.filled{background:#2563EB;border-color:#2563EB}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto 16px}
-.pin-key{padding:14px;border:1.5px solid #e5e7eb;border-radius:12px;background:#f9fafb;cursor:pointer;font-size:18px;font-weight:600;color:#111827;transition:all .15s}
-.pin-key:hover{background:#eff6ff;border-color:#2563EB;color:#2563EB}
-.pin-key:active{transform:scale(.95)}
-.pin-err{font-size:12px;color:#dc2626;margin-bottom:8px;min-height:18px}
-.pin-cancel{font-size:12px;color:#9ca3af;cursor:pointer;text-decoration:underline}
-[data-theme="dark"] .pin-box{background:#1a1f2e;color:#e2e8f0}
-[data-theme="dark"] .pin-title{color:#e2e8f0}
-[data-theme="dark"] .pin-key{background:#222840;border-color:#2e3a52;color:#e2e8f0}
-[data-theme="dark"] .pin-key:hover{background:rgba(37,99,235,.2);border-color:#2563EB;color:#60a5fa}
+.login-hint{font-size:11px;color:#9ca3af;margin-top:18px;text-align:center;line-height:1.6}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50;transition:transform .25s,background var(--transition),border-color var(--transition);box-shadow:2px 0 12px rgba(0,0,0,.04)}
@@ -566,7 +547,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="login-logo-text">Rental Motor<small>Stasiun Tasikmalaya</small></div>
     </div>
     <div class="login-title">Selamat datang</div>
-    <div class="login-sub">Masuk ke dashboard internal</div>
+    <div class="login-sub">Masuk ke dashboard rental motor</div>
     <div class="login-fg">
       <label>Email</label>
       <input type="email" id="login-email" placeholder="Masukkan email..." autocomplete="username">
@@ -1424,6 +1405,8 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
+        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
+        Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
       <div class="struk-header-badge">STRUK RESMI SEWA MOTOR</div>
@@ -1454,191 +1437,52 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
   </div>
 </div>
 
-<!-- PIN OVERLAY untuk akses data sensitif -->
-<div class="pin-overlay" id="pin-overlay" style="display:none">
-  <div class="pin-box">
-    <div class="pin-icon">🔐</div>
-    <div class="pin-title" id="pin-title">Konfirmasi Akses</div>
-    <div class="pin-sub" id="pin-sub">Masukkan PIN untuk mengakses data sensitif</div>
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-err" id="pin-err"></div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinPress('1')">1</button>
-      <button class="pin-key" onclick="pinPress('2')">2</button>
-      <button class="pin-key" onclick="pinPress('3')">3</button>
-      <button class="pin-key" onclick="pinPress('4')">4</button>
-      <button class="pin-key" onclick="pinPress('5')">5</button>
-      <button class="pin-key" onclick="pinPress('6')">6</button>
-      <button class="pin-key" onclick="pinPress('7')">7</button>
-      <button class="pin-key" onclick="pinPress('8')">8</button>
-      <button class="pin-key" onclick="pinPress('9')">9</button>
-      <button class="pin-key" onclick="pinClear()" style="font-size:13px">⌫</button>
-      <button class="pin-key" onclick="pinPress('0')">0</button>
-      <button class="pin-key" onclick="pinCancel()" style="font-size:11px;color:#ef4444">✕</button>
-    </div>
-    <div class="pin-cancel" onclick="pinCancel()">Batal</div>
-  </div>
-</div>
-
 <!-- PRINT AREA (hidden) -->
 <div id="print-area" style="display:none"></div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== SECURITY: PIN System =====
-// PIN disimpan di memori session saja (tidak di localStorage)
-// Default PIN: 1234 — ganti via fungsi setPINHash() jika perlu
-const PIN_HASH_KEY = 'rm_pin_hash';
-function hashPin(pin){ let h=0; for(let c of pin){h=(h*31+c.charCodeAt(0))&0xffffffff;} return h.toString(16); }
-// Simpan PIN hash default jika belum ada
-if(!sessionStorage.getItem(PIN_HASH_KEY)) sessionStorage.setItem(PIN_HASH_KEY, hashPin('1234'));
+// ===== AUTH =====
+const USERS = {
+  'admin@rentalmotor.com': {pass:'admin123', name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
+  'bos@rentalmotor.com':   {pass:'bos123',   name:'Pemilik',    role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
+};
+let currentUser = JSON.parse(sessionStorage.getItem('rm_user')||'null');
+let selectedRole = 'admin';
 
-let _pinBuffer='', _pinCallback=null, _pinCancellable=true;
-// Berapa kali salah PIN berturut-turut
-let _pinFails=0;
-const PIN_LOCKOUT_AFTER=5;
-let _pinLockedUntil=0;
-
-function requirePin(title, sub, callback, cancellable=true){
-  // Cek lockout
-  if(Date.now()<_pinLockedUntil){
-    const sisa=Math.ceil((_pinLockedUntil-Date.now())/1000);
-    showToast('🔒 Terlalu banyak percobaan salah. Tunggu '+sisa+' detik.');
-    return;
-  }
-  _pinBuffer=''; _pinCallback=callback; _pinCancellable=cancellable;
-  document.getElementById('pin-title').textContent=title||'Konfirmasi Akses';
-  document.getElementById('pin-sub').textContent=sub||'Masukkan PIN 4 digit';
-  document.getElementById('pin-err').textContent='';
-  updatePinDots();
-  document.getElementById('pin-overlay').style.display='flex';
-}
-function updatePinDots(){
-  for(let i=0;i<4;i++){
-    const d=document.getElementById('pd'+i);
-    d.classList.toggle('filled',i<_pinBuffer.length);
-  }
-}
-function pinPress(d){
-  if(_pinBuffer.length>=4) return;
-  _pinBuffer+=d;
-  updatePinDots();
-  if(_pinBuffer.length===4) setTimeout(pinVerify,150);
-}
-function pinClear(){
-  _pinBuffer=_pinBuffer.slice(0,-1);
-  updatePinDots();
-  document.getElementById('pin-err').textContent='';
-}
-function pinVerify(){
-  const stored=sessionStorage.getItem(PIN_HASH_KEY)||hashPin('1234');
-  if(hashPin(_pinBuffer)===stored){
-    _pinFails=0;
-    document.getElementById('pin-overlay').style.display='none';
-    if(_pinCallback) _pinCallback();
-    _pinCallback=null;
-  } else {
-    _pinFails++;
-    _pinBuffer='';
-    updatePinDots();
-    if(_pinFails>=PIN_LOCKOUT_AFTER){
-      _pinLockedUntil=Date.now()+30000;
-      document.getElementById('pin-err').textContent='Terlalu banyak percobaan. Dikunci 30 detik.';
-    } else {
-      document.getElementById('pin-err').textContent='PIN salah. Sisa percobaan: '+(PIN_LOCKOUT_AFTER-_pinFails);
-    }
-  }
-}
-function pinCancel(){
-  if(!_pinCancellable) return;
-  _pinBuffer=''; _pinCallback=null;
-  document.getElementById('pin-overlay').style.display='none';
+function selectRole(r){
+  selectedRole = r;
+  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('sel'));
+  const btn = document.getElementById('role-btn-'+r);
+  if(btn) btn.classList.add('sel');
 }
 
-// Akses sudah diverifikasi PIN dalam session ini (berlaku 30 menit)
-let _pinLastVerified = 0;
-const PIN_SESSION_TTL = 30*60*1000; // 30 menit
-
-function requirePinOnce(title, sub, callback){
-  // Jika sudah verify PIN dalam 30 menit terakhir, langsung lanjut
-  if(Date.now()-_pinLastVerified < PIN_SESSION_TTL){
-    callback();
-    return;
-  }
-  requirePin(title, sub, ()=>{
-    _pinLastVerified=Date.now();
-    callback();
-  });
-}
-
-// ===== SECURITY: Data masking =====
-function maskKTP(ktp){ if(!ktp||ktp.length<6) return ktp||'—'; return ktp.slice(0,4)+'••••••••'+ktp.slice(-4); }
-function maskHP(hp){ if(!hp||hp.length<8) return hp||'—'; return hp.slice(0,4)+'••••'+hp.slice(-3); }
-
-// ===== SECURITY: Role-based access control =====
-function isBos(){ return currentUser&&currentUser.roleKey==='bos'; }
-function isAdmin(){ return currentUser&&currentUser.roleKey==='admin'; }
-// Hanya Pemilik (bos) yang boleh Export Excel & Backup
-function checkExportAccess(cb){
-  if(!isBos()&&!isAdmin()){ showToast('⛔ Hanya Admin/Pemilik yang bisa export data'); return; }
-  requirePinOnce('Konfirmasi Export Data','Masukkan PIN untuk mengunduh data pelanggan', cb);
-}
-function checkSensitiveAccess(cb){
-  requirePinOnce('Akses Data Sensitif','Masukkan PIN untuk melihat data KTP / identitas', cb);
-}
-
-
-// Role mapping: defined server-side via user metadata set in Supabase Dashboard
-// For each user: go to Authentication > Users > edit user > add metadata:
-//   { "name": "Admin Utama", "role": "Administrator", "roleKey": "admin", "avatar": "AD" }
-//   { "name": "Pemilik",     "role": "Pemilik Usaha", "roleKey": "bos",   "avatar": "PO" }
-
-let currentUser = null; // will be set after Supabase session check
-
-async function doLogin(){
+function doLogin(){
   const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass  = document.getElementById('login-pass').value;
-  const err   = document.getElementById('login-error');
-  const btn   = document.querySelector('.login-btn');
-  err.classList.remove('show');
-  btn.textContent = 'Masuk...';
-  btn.disabled = true;
-  try {
-    const { data, error } = await supa.auth.signInWithPassword({ email, password: pass });
-    if(error) throw error;
-    const meta = data.user?.user_metadata || {};
-    const defaults = ROLE_DEFAULTS[email] || {name: email, role:'User', roleKey:'admin', avatar:'US'};
-    currentUser = {
-      email,
-      name:     meta.name     || defaults.name,
-      role:     meta.role     || defaults.role,
-      roleKey:  meta.roleKey  || defaults.roleKey,
-      avatar:   meta.avatar   || defaults.avatar,
-    };
-    document.getElementById('login-page').classList.remove('show');
-    setTimeout(()=>{
-      applyUserUI();
-      loadAllData().then(()=>{ buildMotorDropdown(); renderDashboard(); renderPesanan(); });
-      showToast('Selamat datang, '+currentUser.name+'!');
-    }, 300);
-  } catch(e) {
-    err.textContent = 'Email atau password salah. Coba lagi.';
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  const user = USERS[email];
+  if(!user || user.pass !== pass){
     err.classList.add('show');
-  } finally {
-    btn.textContent = 'Masuk ke Dashboard';
-    btn.disabled = false;
+    return;
   }
+  err.classList.remove('show');
+  currentUser = {email, name:user.name, role:user.role, roleKey:user.roleKey, avatar:user.avatar};
+  sessionStorage.setItem('rm_user', JSON.stringify(currentUser));
+  const lp = document.getElementById('login-page');
+  lp.classList.remove('show');
+  setTimeout(()=>{
+    applyUserUI();
+    loadAllData();
+      renderPesanan();
+    showToast('Selamat datang, '+user.name+'!');
+  }, 300);
 }
 
-async function doLogout(){
+function doLogout(){
   if(!confirm('Yakin ingin keluar?')) return;
-  await supa.auth.signOut();
+  sessionStorage.removeItem('rm_user');
   currentUser = null;
   document.getElementById('login-page').classList.add('show');
 }
@@ -1671,40 +1515,12 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
-// ===== SUPABASE INIT =====
-// PRIORITY 3 — ROW LEVEL SECURITY (RLS) CHECKLIST:
-// Pastikan RLS sudah aktif di Supabase Dashboard > Table Editor untuk semua tabel:
-//   pesanan      : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
-//   stok         : Enable RLS → Policy: allow authenticated users to SELECT/UPDATE
-//   stok_log     : Enable RLS → Policy: allow authenticated users to SELECT/INSERT
-//   pengeluaran  : Enable RLS → Policy: allow authenticated users to SELECT/INSERT/UPDATE/DELETE
-// TANPA RLS, siapapun yang punya anon key bisa baca/hapus semua data via API!
-// Anon key boleh publik — itu memang desain Supabase — tapi RLS yang melindunginya.
-const SUPA_URL = 'https://ashxyvalfmsgjwtmjyij.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaHh5dmFsZm1zZ2p3dG1qeWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NDgxNzAsImV4cCI6MjA5NDMyNDE3MH0.c3WYVJtj8CqS6ePCiP5r8MbUGVyOSmvLf-Un4FLvIYo';
-const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
-const BUCKET = 'rental-bucket';
-
-// Check session on load via Supabase (no more sessionStorage)
-(async ()=>{
-  const { data: { session } } = await supa.auth.getSession();
-  if(session?.user){
-    const email = session.user.email;
-    const meta = session.user.user_metadata || {};
-    const defaults = ROLE_DEFAULTS[email] || {name:email, role:"User", roleKey:"admin", avatar:"US"};
-    currentUser = {
-      email,
-      name:    meta.name    || defaults.name,
-      role:    meta.role    || defaults.role,
-      roleKey: meta.roleKey || defaults.roleKey,
-      avatar:  meta.avatar  || defaults.avatar,
-    };
-    document.getElementById("login-page").classList.remove("show");
-    applyUserUI();
-    loadAllData().then(()=>{ buildMotorDropdown(); renderDashboard(); });
-  }
-})();
-
+// Check session on load
+if(currentUser){
+  document.getElementById('login-page').classList.remove('show');
+  applyUserUI();
+  loadAllData();
+}
 
 // ===== DATA =====
 let pesanan = [];
@@ -1714,49 +1530,16 @@ let pengeluaran = [];
 const DENDA_PER_HARI = 50000;
 
 // ===== SUPABASE HELPERS =====
-// Upload gambar ke Storage, return public URL atau null
+// Upload gambar — disimpan sebagai base64 di localStorage
 async function uploadImg(base64DataURL, folder, filename){
   if(!base64DataURL) return null;
-  try{
-    const res = await fetch(base64DataURL);
-    const blob = await res.blob();
-    const ext = blob.type.includes('png')?'png':'jpg';
-    const path = folder+'/'+filename+'.'+ext;
-    const { error } = await supa.storage.from(BUCKET).upload(path, blob, {upsert:true, contentType:blob.type});
-    if(error){ console.error('Upload img error:',error); return null; }
-    const { data } = supa.storage.from(BUCKET).getPublicUrl(path);
-    return data.publicUrl;
-  }catch(e){ console.error('uploadImg error:',e); return null; }
+  // Simpan langsung base64, return sebagai "URL" internal
+  return base64DataURL;
 }
 
-// Konversi row DB → format pesanan (camelCase)
-function dbToPesanan(r){
-  return {
-    id: r.id,
-    nama: r.nama, hp: r.hp, alamatRumah: r.alamat_rumah||'',
-    jenisPenyewa: r.jenis_penyewa||'perorangan', namaPerusahaan: r.nama_perusahaan||'',
-    motor: r.motor, mulai: r.mulai, selesai: r.selesai, durasi: r.durasi, total: r.total,
-    payment: r.payment, antar: r.antar, alamat: r.alamat, catatan: r.catatan,
-    status: r.status, dp: r.dp||0, sisaBayar: r.sisa_bayar||0, statusLunas: r.status_lunas||'Lunas',
-    ktpNo: r.ktp_no||'', ktpImgUrl: r.ktp_img_url||null, buktiImgUrl: r.bukti_img_url||null,
-    waktu: r.waktu, inputOleh: r.input_oleh||'Admin',
-    blacklist: r.blacklist||false, catatanBlacklist: r.catatan_blacklist||''
-  };
-}
-
-// Konversi pesanan → format DB (snake_case)
-function pesananToDb(p){
-  return {
-    nama: p.nama, hp: p.hp, alamat_rumah: p.alamatRumah||'',
-    jenis_penyewa: p.jenisPenyewa||'perorangan', nama_perusahaan: p.namaPerusahaan||'',
-    motor: p.motor, mulai: p.mulai, selesai: p.selesai, durasi: p.durasi, total: p.total,
-    payment: p.payment, antar: p.antar, alamat: p.alamat, catatan: p.catatan,
-    status: p.status, dp: p.dp||0, sisa_bayar: p.sisaBayar||0, status_lunas: p.statusLunas||'Lunas',
-    ktp_no: p.ktpNo||'', ktp_img_url: p.ktpImgUrl||null, bukti_img_url: p.buktiImgUrl||null,
-    waktu: p.waktu||new Date().toISOString(), input_oleh: p.inputOleh||'Admin',
-    blacklist: p.blacklist||false, catatan_blacklist: p.catatanBlacklist||''
-  };
-}
+// Format helpers (kept for backup/restore compatibility)
+function dbToPesanan(r){ return r; }
+function pesananToDb(p){ return p; }
 
 // Gambar: ambil URL langsung dari field pesanan (sudah di Supabase Storage)
 function getKtpImg(p){ return p?p.ktpImgUrl||null:null; }
@@ -1765,8 +1548,10 @@ function getBuktiImg(p){ return p?p.buktiImgUrl||null:null; }
 // saveAll: tidak dipakai lagi untuk pesanan, tiap operasi langsung ke Supabase
 // Tapi dipertahankan untuk stok/pengeluaran backup lokal sebagai fallback
 function saveAll(){
-  localStorage.setItem('rm_stok',JSON.stringify(stokData));
-  localStorage.setItem('rm_stok_log',JSON.stringify(stokLog));
+  localStorage.setItem('rm_pesanan',     JSON.stringify(pesanan));
+  localStorage.setItem('rm_stok',        JSON.stringify(stokData));
+  localStorage.setItem('rm_stok_log',    JSON.stringify(stokLog));
+  localStorage.setItem('rm_pengeluaran', JSON.stringify(pengeluaran));
 }
 
 // Dummy compat functions (dulu untuk localStorage img, sekarang no-op)
@@ -1774,94 +1559,42 @@ function saveImgSeparate(){}
 function reindexImgKeys(){}
 function removeImgKeys(){}
 
-// ===== LOAD DATA FROM SUPABASE =====
-async function loadAllData(){
-  hideOfflineBanner();
-  showLoadingOverlay(true);
+// ===== LOAD DATA FROM LOCALSTORAGE =====
+function loadAllData(){
   try{
-    const [rPesanan, rStok, rStokLog, rPeng] = await Promise.all([
-      supa.from('pesanan').select('*').order('created_at', {ascending:false}),
-      supa.from('stok').select('*'),
-      supa.from('stok_log').select('*').order('created_at', {ascending:false}).limit(200),
-      supa.from('pengeluaran').select('*').order('tgl', {ascending:false})
-    ]);
-    if(rPesanan.error) throw rPesanan.error;
-    if(rStok.error) throw rStok.error;
-    pesanan = (rPesanan.data||[]).map(dbToPesanan);
-    stokData = (rStok.data||[]).map(r=>({id:r.id,name:r.name,harga:r.harga,total:r.total,avail:r.avail}));
-    stokLog = (rStokLog.data||[]).map(r=>({motor:r.motor,perubahan:r.perubahan,oleh:r.oleh,waktu:r.waktu}));
-    pengeluaran = (rPeng.data||[]).map(r=>({id:r.id,tgl:r.tgl,kat:r.kat,jumlah:r.jumlah,ket:r.ket,bukti:r.bukti_url,oleh:r.oleh,waktu:r.waktu}));
-    saveAll();
-  }catch(e){
-    const msg = e?.message || e?.error_description || 'Koneksi gagal';
-    console.error('loadAllData error:', JSON.stringify(e), e);
-    showOfflineBanner(msg);
-  }finally{
-    showLoadingOverlay(false);
-  }
-}
+    const savedPesanan = localStorage.getItem('rm_pesanan');
+    const savedStok    = localStorage.getItem('rm_stok');
+    const savedStokLog = localStorage.getItem('rm_stok_log');
+    const savedPeng    = localStorage.getItem('rm_pengeluaran');
 
-function showOfflineBanner(msg){
-  let el = document.getElementById('offline-banner');
-  if(!el){
-    el = document.createElement('div');
-    el.id = 'offline-banner';
-    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9997;background:#dc2626;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2)';
-    document.body.appendChild(el);
-  }
-  el.innerHTML = '<span>\u26a0\ufe0f Gagal memuat data: ' + esc(msg) + '</span><button onclick="retryLoad()" style="background:#fff;color:#dc2626;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">\ud83d\udd04 Coba Lagi</button>';
-  el.style.display = 'flex';
-}
+    pesanan     = savedPesanan  ? JSON.parse(savedPesanan)  : [];
+    stokLog     = savedStokLog  ? JSON.parse(savedStokLog)  : [];
+    pengeluaran = savedPeng     ? JSON.parse(savedPeng)     : [];
 
-function hideOfflineBanner(){
-  const el = document.getElementById('offline-banner');
-  if(el) el.style.display = 'none';
-}
-
-async function retryLoad(){
-  await loadAllData();
-  if(!document.getElementById('offline-banner') || document.getElementById('offline-banner').style.display === 'none'){
+    if(savedStok){
+      stokData = JSON.parse(savedStok);
+    } else {
+      // Default stok awal
+      stokData = [
+        {id:'beat',      name:'Honda Beat',        harga:100000, total:10, avail:10},
+        {id:'vario125',  name:'Honda Vario 125',   harga:120000, total:8,  avail:8},
+        {id:'vario160',  name:'Honda Vario 160',   harga:150000, total:7,  avail:7},
+        {id:'nmax',      name:'Yamaha NMAX',       harga:175000, total:6,  avail:6},
+        {id:'vespa',     name:'Vespa Matic',       harga:200000, total:4,  avail:4},
+      ];
+      localStorage.setItem('rm_stok', JSON.stringify(stokData));
+    }
     buildMotorDropdown();
     renderDashboard();
-    renderPesanan();
-    showToast('\u2705 Data berhasil dimuat!');
+  }catch(e){
+    console.error('loadAllData error:', e);
+    showToast('⚠️ Gagal memuat data lokal');
   }
 }
 
-function showLoadingOverlay(show){
-  let el = document.getElementById('supa-loading');
-  if(!el){
-    el = document.createElement('div');
-    el.id = 'supa-loading';
-    el.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px';
-    el.innerHTML='<div style="width:40px;height:40px;border:4px solid #fff3;border-top-color:#2563EB;border-radius:50%;animation:spin .7s linear infinite"></div><div style="color:#fff;font-size:14px;font-weight:600">Memuat data...</div>';
-    document.body.appendChild(el);
-  }
-  el.style.display = show ? 'flex' : 'none';
-}
+function showLoadingOverlay(show){}
 
 // ===== HELPERS =====
-// ===== XSS SANITIZER =====
-// Escapes HTML special chars so user data is never executed as markup
-function esc(str){
-  if(str==null)return "";
-  return String(str)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
-}
-// ===== ISO WEEK HELPER =====
-function isoWeekRange(year, week){
-  var jan4 = new Date(year, 0, 4);
-  var thu = new Date(jan4);
-  thu.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + 3 + (week - 1) * 7);
-  var weekStart = new Date(thu); weekStart.setDate(thu.getDate() - 3); weekStart.setHours(0,0,0,0);
-  var weekEnd   = new Date(thu); weekEnd.setDate(thu.getDate() + 3);   weekEnd.setHours(23,59,59,999);
-  return { weekStart: weekStart, weekEnd: weekEnd };
-}
-
 let curEditIdx=null, curStokIdx=null, newAntarVal='tidak', newPayVal='', newKTPData=null, newBuktiData=null, newJenisPenyewa='perorangan';
 
 function setJenisPenyewa(v){
@@ -1990,7 +1723,7 @@ function renderDashboard(){
   const tb=document.getElementById('tbl-recent');
   const recent=[...pesanan].reverse().slice(0,5);
   if(!recent.length){tb.innerHTML='<tr><td colspan="4"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg></div><div class="empty-text">Belum ada pesanan</div></div></td></tr>';return;}
-  tb.innerHTML=recent.map(p=>`<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.motor)}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.total)}</td><td>${statusPill(p.status)}</td></tr>`).join('');
+  tb.innerHTML=recent.map(p=>`<tr><td><strong>${p.nama}</strong></td><td>${p.motor}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.total)}</td><td>${statusPill(p.status)}</td></tr>`).join('');
 
   const sl=document.getElementById('dash-stok-list');
   sl.innerHTML=stokData.map(s=>{
@@ -2015,7 +1748,7 @@ function renderDashboard(){
       const origIdx=pesanan.indexOf(p);
       const denda=hitungDenda(p);
       const terlambatHari=denda/DENDA_PER_HARI;
-      return`<div class="jatuh-item"><div><div class="jatuh-nama">${esc(p.nama)} ${denda>0?'<span class="pill pill-red">Terlambat '+terlambatHari+' hari</span>':''}</div><div class="jatuh-meta">${esc(p.motor)} · ${p.durasi} hari · ${rp(p.total)} · ${esc(p.hp)}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
+      return`<div class="jatuh-item"><div><div class="jatuh-nama">${p.nama} ${denda>0?'<span class="pill pill-red">Terlambat '+terlambatHari+' hari</span>':''}</div><div class="jatuh-meta">${p.motor} · ${p.durasi} hari · ${rp(p.total)} · ${p.hp}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
     }).join('');
   }
 }
@@ -2037,17 +1770,17 @@ function renderPesanan(){
     const denda=hitungDenda(p);
     return`<tr>
       <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${origIdx+1}</td>
-      <td><strong>${esc(p.nama)}</strong></td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${maskHP(esc(p.hp))}</td>
-      <td>${esc(p.motor)}</td>
+      <td><strong>${p.nama}</strong></td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${p.hp}</td>
+      <td>${p.motor}</td>
       <td style="font-size:12px">${formatTgl(p.mulai)}</td>
       <td style="font-size:12px">${formatTgl(p.selesai)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${p.durasi} hari</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">${rp(p.total)}</td>
       <td>${p.dp>0?`<span style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.dp)}</span>`:lunasPill(p)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">${p.dp>0&&p.dp<p.total?rp(p.sisaBayar||Math.max(0,p.total-p.dp)):'<span style="color:var(--text3)">—</span>'}</td>
-      <td>${payPill(esc(p.payment))}</td>
-      <td>${statusPill(esc(p.status))}</td>
+      <td>${payPill(p.payment)}</td>
+      <td>${statusPill(p.status)}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openStruk(${origIdx})">Struk</button>
         <button class="btn btn-ghost btn-sm" onclick="openEditPesanan(${origIdx})">Edit</button>
@@ -2068,17 +1801,17 @@ function openStruk(idx){
   const terlambatHari=denda>0?denda/DENDA_PER_HARI:0;
   document.getElementById('struk-content').innerHTML=`
     <div class="struk-row"><span class="struk-label">No. Pesanan</span><span class="struk-val">#${String(idx+1).padStart(4,'0')}</span></div>
-    <div class="struk-row"><span class="struk-label">Nama Penyewa</span><span class="struk-val">${esc(p.nama)}</span></div>
-    <div class="struk-row"><span class="struk-label">No. HP</span><span class="struk-val">${esc(p.hp)}</span></div>
-    <div class="struk-row"><span class="struk-label">Motor</span><span class="struk-val">${esc(p.motor)}</span></div>
+    <div class="struk-row"><span class="struk-label">Nama Penyewa</span><span class="struk-val">${p.nama}</span></div>
+    <div class="struk-row"><span class="struk-label">No. HP</span><span class="struk-val">${p.hp}</span></div>
+    <div class="struk-row"><span class="struk-label">Motor</span><span class="struk-val">${p.motor}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Mulai</span><span class="struk-val">${formatTgl(p.mulai)}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Selesai</span><span class="struk-val">${formatTgl(p.selesai)}</span></div>
     <div class="struk-row"><span class="struk-label">Durasi Sewa</span><span class="struk-val">${p.durasi} hari</span></div>
-    <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${esc(p.payment)}</span></div>
-    <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${esc(p.antar)}</span></div>
-    ${p.alamat&&p.alamat!=='-'?`<div class="struk-row"><span class="struk-label">Alamat</span><span class="struk-val">${esc(p.alamat)}</span></div>`:''}
-    <div class="struk-row"><span class="struk-label">Status</span><span class="struk-val">${esc(p.status)}</span></div>
-    ${p.catatan?`<div class="struk-row"><span class="struk-label">Catatan</span><span class="struk-val">${esc(p.catatan)}</span></div>`:''}
+    <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${p.payment}</span></div>
+    <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${p.antar}</span></div>
+    ${p.alamat&&p.alamat!=='-'?`<div class="struk-row"><span class="struk-label">Alamat</span><span class="struk-val">${p.alamat}</span></div>`:''}
+    <div class="struk-row"><span class="struk-label">Status</span><span class="struk-val">${p.status}</span></div>
+    ${p.catatan?`<div class="struk-row"><span class="struk-label">Catatan</span><span class="struk-val">${p.catatan}</span></div>`:''}
     <div class="struk-row"><span class="struk-label">Harga Sewa</span><span class="struk-val">${rp(p.total)}</span></div>
     ${denda>0?`<div class="struk-denda-row"><span>⚠️ Denda Keterlambatan (${terlambatHari} hari × ${rp(DENDA_PER_HARI)})</span><span>${rp(denda)}</span></div>`:''}
     <div class="struk-total-row"><span>TOTAL TAGIHAN</span><span class="struk-val">${rp(totalBayar)}</span></div>
@@ -2091,6 +1824,8 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
+      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
+      <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
     </div>
@@ -2320,16 +2055,12 @@ async function simpanPesanan(){
   entry.ktpImgUrl   = ktpUrl;
   entry.buktiImgUrl = buktiUrl;
   // Simpan ke Supabase DB
-  const dbRow = pesananToDb(entry);
-  const { data: inserted, error: insErr } = await supa.from('pesanan').insert(dbRow).select().single();
-  if(insErr){ showToast('❌ Gagal simpan: '+insErr.message); reEnableBtn(); return; }
-  entry.id = inserted.id;
+  entry.id = Date.now();
   pesanan.unshift(entry);
-  // Update stok di Supabase
   if(si>=0&&status==='Aktif'){
     stokData[si].avail--;
-    await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id);
   }
+  saveAll();
   document.getElementById('badge-pesanan').textContent=pesanan.length;
   const detail=document.getElementById('konfirmasi-simpan-detail');
   if(detail) detail.textContent=nama+' · '+mname+' · '+dur+' hari · '+rp(total);
@@ -2531,13 +2262,11 @@ function renderLaporan(){
 async function hapusPesanan(idx){
   const p=pesanan[idx];
   if(!confirm(`Hapus pesanan atas nama "${p.nama}" (${p.motor})?\nTindakan ini tidak dapat dibatalkan.`))return;
-  const { error } = await supa.from('pesanan').delete().eq('id', p.id);
-  if(error){ showToast('❌ Gagal hapus: '+error.message); return; }
   if(p.status==='Aktif'){
     const si=stokData.findIndex(s=>s.name===p.motor);
-    if(si>=0){ stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total); await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id); }
+    if(si>=0) stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);
   }
-  pesanan.splice(idx,1);renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
+  pesanan.splice(idx,1);saveAll();renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
 }
 function openEditStatus(idx){curEditIdx=idx;document.getElementById('mod-nama').value=pesanan[idx].nama;document.getElementById('mod-status').value=pesanan[idx].status;document.getElementById('modal-status').classList.add('show');}
 
@@ -2601,12 +2330,8 @@ async function saveEditPesanan(){
   if(ktpDataEdit!==null){ ktpImgUrl = await uploadImg(ktpDataEdit,'ktp','ktp_'+old.id)||ktpImgUrl; }
   const updated = {...old,nama,hp,motor:mname,mulai,selesai,durasi:dur,total,payment:editPayVal,antar:editAntarVal==='ya'?'Ya':'Tidak',alamat,catatan,status,dp:dpVal,sisaBayar,statusLunas,ktpImgUrl};
   const dbRow = pesananToDb(updated);
-  const { error } = await supa.from('pesanan').update(dbRow).eq('id', old.id);
-  if(error){ showToast('❌ Gagal update: '+error.message); return; }
   pesanan[curEditIdx]=updated;
-  // Update stok di Supabase
-  await supa.from('stok').update({avail:stokData[stokData.findIndex(s=>s.name===old.motor)]?.avail??0}).eq('name',old.motor).then(()=>{});
-  await supa.from('stok').update({avail:stokData[stokData.findIndex(s=>s.name===mname)]?.avail??0}).eq('name',mname).then(()=>{});
+  saveAll();
   closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
 }
 async function saveStatus(){
@@ -2614,8 +2339,7 @@ async function saveStatus(){
   const si=stokData.findIndex(s=>s.name===motor);
   if(si>=0){if(oldStatus==='Aktif'&&newStatus!=='Aktif')stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);if(oldStatus!=='Aktif'&&newStatus==='Aktif'&&stokData[si].avail>0)stokData[si].avail--;}
   pesanan[curEditIdx].status=newStatus;
-  await supa.from('pesanan').update({status:newStatus}).eq('id',pesanan[curEditIdx].id);
-  if(si>=0) await supa.from('stok').update({avail:stokData[si].avail}).eq('id',stokData[si].id);
+  saveAll();
   closeModal();renderPesanan();renderDashboard();showToast('Status diperbarui');
 }
 function openTambahMotor(){
@@ -2633,13 +2357,11 @@ async function simpanMotorBaru(){
   if(!total||total<1){document.getElementById('tmfg-total').classList.add('has-error');document.getElementById('tm-total').classList.add('invalid');valid=false;}else{document.getElementById('tmfg-total').classList.remove('has-error');document.getElementById('tm-total').classList.remove('invalid');}
   if(!valid){showToast('Periksa kembali — ada field yang belum diisi');return;}
   if(stokData.some(s=>s.name.toLowerCase()===nama.toLowerCase())){showToast('Motor dengan nama ini sudah ada!');return;}
-  const { data: stokInserted, error: stokErr } = await supa.from('stok').insert({name:nama,harga,total,avail:total}).select().single();
-  if(stokErr){ showToast('❌ Gagal tambah motor: '+stokErr.message); return; }
-  const id = stokInserted.id;
+  const newId = 'motor_'+Date.now();
   const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
-  await supa.from('stok_log').insert(logEntry);
-  stokData.push({id,name:nama,harga,total,avail:total});
+  stokData.push({id:newId,name:nama,harga,total,avail:total});
   stokLog.unshift(logEntry);
+  saveAll();
   buildMotorDropdown();
   document.getElementById('modal-tambah-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('✅ Motor baru "'+nama+'" berhasil ditambahkan');
@@ -2656,13 +2378,11 @@ function openHapusMotor(i){
 async function konfirmasiHapusMotor(){
   if(hapusMotorIdx===null)return;
   const s=stokData[hapusMotorIdx];
-  const { error } = await supa.from('stok').delete().eq('id', s.id);
-  if(error){ showToast('❌ Gagal hapus motor: '+error.message); return; }
   const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
-  await supa.from('stok_log').insert(logEntry);
   stokLog.unshift(logEntry);
   stokData.splice(hapusMotorIdx,1);
   hapusMotorIdx=null;
+  saveAll();
   buildMotorDropdown();
   document.getElementById('modal-hapus-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('Motor berhasil dihapus');
@@ -2673,12 +2393,10 @@ function openEditStok(idx){
 async function saveStok(){
   const newTotal=parseInt(document.getElementById('mod-stok-total').value)||0;const newAvail=parseInt(document.getElementById('mod-stok-avail').value)||0;
   const old=stokData[curStokIdx];const oleh=currentUser?currentUser.name:'Admin';
-  const { error } = await supa.from('stok').update({total:newTotal,avail:Math.min(newAvail,newTotal)}).eq('id',old.id);
-  if(error){ showToast('❌ Gagal update stok: '+error.message); return; }
   const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID')};
-  await supa.from('stok_log').insert(logEntry);
   stokLog.unshift(logEntry);
   stokData[curStokIdx].total=newTotal;stokData[curStokIdx].avail=Math.min(newAvail,newTotal);
+  saveAll();
   buildMotorDropdown();closeModal();renderStok();renderDashboard();showToast('Stok diperbarui');
 }
 function closeModal(){document.getElementById('modal-status').classList.remove('show');document.getElementById('modal-stok').classList.remove('show');document.getElementById('modal-hapus-motor').classList.remove('show');}
@@ -2738,7 +2456,7 @@ async function toggleBlacklist(ktpNo, hp){
   // Simpan blacklist ke Supabase
   const isNowBl = target[0].blacklist;
   const hp2 = target[0].hp;
-  await supa.from('pesanan').update({blacklist:isNowBl, catatan_blacklist:isNowBl?(target[0].catatanBlacklist||''):''}).eq('hp', hp2);
+  saveAll();
   renderKonsumen();renderPesanan();
 }
 
@@ -2818,9 +2536,9 @@ function renderKonsumen(){
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
       <td>${namaDisplay}${bl?'<br><span class="pill pill-red" style="margin-top:4px;font-size:10px">⛔ BLACKLIST</span>':''}</td>
-      <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px">${maskHP(hp)}</td>
-      <td style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="[klik KTP untuk lihat alamat]">••••••••••</td>
-      <td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">${ktpNo?maskKTP(ktpNo):'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px">${hp}</td>
+      <td style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${k.alamatRumah||''}">${k.alamatRumah||'<span style="color:var(--text3)">—</span>'}</td>
+      <td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">${ktpNo||'<span style="color:var(--text3)">—</span>'}</td>
       <td><span class="pill ${k.jenisPenyewa==='perusahaan'?'pill-blue':'pill-gray'}">${k.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan'}</span></td>
       <td style="font-size:12px;text-align:center">${k.totalSewa}x</td>
       <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600">${rp(k.totalBayar)}</td>
@@ -2829,7 +2547,7 @@ function renderKonsumen(){
         :'<span class="pill pill-green">✅ OK</span>'
       }</td>
       <td style="white-space:nowrap">
-        ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumenSecure('${ktpNo}','${hp}')" title="Lihat KTP (butuh PIN)"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
+        ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumen('${ktpNo}','${hp}')" title="Lihat KTP"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
         <button class="btn btn-sm ${bl?'btn-ghost':''}${!bl?' btn-ghost':''}" 
           style="${bl?'background:var(--green-soft);color:var(--green);border:1px solid #86efac':'background:var(--red-soft);color:var(--red);border:1px solid #fca5a5'}"
           onclick="toggleBlacklist('${ktpNo}','${hp}')">
@@ -2922,14 +2640,7 @@ function buildSheet(rows, colWidths, numHeaderRows){
   return ws;
 }
 
-function lihatKTPKonsumenSecure(ktpNo, hp){
-  checkSensitiveAccess(()=>lihatKTPKonsumen(ktpNo, hp));
-}
-
 function downloadExcel(){
-  checkExportAccess(()=>_downloadExcelImpl());
-}
-function _downloadExcelImpl(){
   if(!pesanan.length){showToast('Belum ada data');return;}
   const wb=XLSX.utils.book_new();
   // Sheet 1: Database Konsumen
@@ -2953,7 +2664,6 @@ function _downloadExcelImpl(){
   showToast('Excel berhasil diunduh');
 }
 function downloadExcelKonsumen(){
-  checkExportAccess(()=>{
   const unik=getKonsumenUnik(pesanan);
   if(!unik.length){showToast('Belum ada data konsumen');return;}
   const wb=XLSX.utils.book_new();
@@ -2966,7 +2676,6 @@ function downloadExcelKonsumen(){
   XLSX.utils.book_append_sheet(wb,ws,'Database Konsumen');
   XLSX.writeFile(wb,'Database_Konsumen_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
   showToast('Database konsumen berhasil diunduh');
-  });
 }
 function toggleLapPeriod(){
   const t = document.getElementById('lap-period-type').value;
@@ -2975,9 +2684,6 @@ function toggleLapPeriod(){
   document.getElementById('lap-bulan-group').style.display = t==='bulanan'?'flex':'none';
 }
 function downloadFiltered(){
-  checkExportAccess(()=>_downloadFilteredImpl());
-}
-function _downloadFilteredImpl(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
   let data = [...pesanan];
@@ -2988,8 +2694,15 @@ function _downloadFilteredImpl(){
     const wk = document.getElementById('lap-minggu').value;
     if(wk){
       const [yr,wn] = wk.split('-W');
-      const {weekStart, weekEnd} = isoWeekRange(parseInt(yr), parseInt(wn));
-      data = data.filter(p=>{ const d=parseWaktu(p); return d>=weekStart && d<=weekEnd; });
+      data = data.filter(p=>{
+        const d = parseWaktu(p);
+        const jan4 = new Date(parseInt(yr),0,4);
+        const weekStart = new Date(jan4);
+        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
+        weekStart.setHours(0,0,0,0);
+        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+        return d >= weekStart && d <= weekEnd;
+      });
     }
   } else if(periodType === 'bulanan'){
     const bln = document.getElementById('lap-bulan').value;
@@ -3016,38 +2729,42 @@ function _downloadFilteredImpl(){
 
 // ===== BACKUP & RESTORE =====
 function backupData(){
-  checkExportAccess(()=>{
   const payload={pesanan,stokData,stokLog,exportedAt:new Date().toISOString(),version:'v6'};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
-  });
 }
 function restoreData(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=async function(ev){try{const d=JSON.parse(ev.target.result);if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}if(!confirm('Data saat ini akan diganti. Lanjutkan?'))return;pesanan=d.pesanan||[];stokData=d.stokData||stokData;stokLog=d.stokLog||[];
-        showToast('⏳ Mengupload data ke Supabase...');
-        // Bulk insert ke Supabase
-        if(pesanan.length){ await supa.from('pesanan').delete().neq('id',0); await supa.from('pesanan').insert(pesanan.map(pesananToDb)); }
-        if(stokData.length){ for(const s of stokData){ await supa.from('stok').upsert({id:s.id,name:s.name,harga:s.harga,total:s.total,avail:s.avail}); } }
-        buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan ke Supabase');}catch{showToast('Gagal membaca file backup');}};
+  reader.onload=function(ev){
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}
+      if(!confirm('Data saat ini akan diganti. Lanjutkan?'))return;
+      pesanan=d.pesanan||[];
+      stokData=d.stokData||stokData;
+      stokLog=d.stokLog||[];
+      pengeluaran=d.pengeluaran||[];
+      saveAll();
+      buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan');
+    }catch(e){showToast('Gagal membaca file backup');}
+  };
+  reader.readAsText(file);e.target.value='';
   reader.readAsText(file);e.target.value='';
 }
 async function resetSemuaData(){
-  requirePin('⚠️ Reset Semua Data','Masukkan PIN untuk konfirmasi. Tindakan ini tidak bisa dibatalkan!', async ()=>{
   if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
   if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
-  showLoadingOverlay(true);
-  await supa.from('pesanan').delete().neq('id',0);
-  await supa.from('stok_log').delete().neq('id',0);
-  await supa.from('pengeluaran').delete().neq('id',0);
-  // Reset stok ke default
-  const defaultStok=[{id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},{id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},{id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},{id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},{id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}];
-  for(const s of defaultStok){ await supa.from('stok').upsert(s); }
-  pesanan=[];stokLog=[];pengeluaran=[];stokData=defaultStok;
-  showLoadingOverlay(false);
+  pesanan=[];stokLog=[];pengeluaran=[];
+  stokData=[
+    {id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},
+    {id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},
+    {id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},
+    {id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},
+    {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}
+  ];
+  saveAll();
   buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
-  }, true); // end requirePin
 }
 
 // ===== PENGELUARAN =====
@@ -3092,13 +2809,9 @@ async function tambahPengeluaran(){
     oleh: currentUser ? currentUser.name : 'Admin',
     waktu: new Date().toISOString()
   };
-  const { data: inserted, error } = await supa.from('pengeluaran').insert({
-    tgl: entry.tgl, kat: entry.kat, jumlah: entry.jumlah, ket: entry.ket,
-    bukti_url: entry.bukti||null, oleh: entry.oleh, waktu: entry.waktu
-  }).select().single();
-  if(error){ showToast('❌ Gagal simpan pengeluaran: '+error.message); return; }
-  entry.id = inserted.id;
+  entry.id = Date.now();
   pengeluaran.unshift(entry);
+  saveAll();
   resetFormPengeluaran();
   renderPengeluaran();
   updatePengRekapTop();
@@ -3107,9 +2820,8 @@ async function tambahPengeluaran(){
 
 async function hapusPengeluaran(id){
   if(!confirm('Hapus data pengeluaran ini?')) return;
-  const { error } = await supa.from('pengeluaran').delete().eq('id', id);
-  if(error){ showToast('❌ Gagal hapus: '+error.message); return; }
   pengeluaran = pengeluaran.filter(p => p.id !== id);
+  saveAll();
   renderPengeluaran();
   updatePengRekapTop();
   showToast('Pengeluaran dihapus');
@@ -3407,11 +3119,9 @@ function buildRowsOperasional(penjualanData){
   return rows;
 }
 
-// Override downloadFiltered untuk 3 sheet (v21 patch)
+// Override downloadFiltered untuk 3 sheet
+// Override downloadFiltered
 downloadFiltered = function(){
-  checkExportAccess(()=>_downloadFilteredV21Impl());
-};
-function _downloadFilteredV21Impl(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
   let data = [...pesanan];
@@ -3422,8 +3132,15 @@ function _downloadFilteredV21Impl(){
     const wk = document.getElementById('lap-minggu').value;
     if(wk){
       const [yr,wn] = wk.split('-W');
-      const {weekStart, weekEnd} = isoWeekRange(parseInt(yr), parseInt(wn));
-      data = data.filter(p=>{ const d=parseWaktu(p); return d>=weekStart && d<=weekEnd; });
+      data = data.filter(p=>{
+        const d = parseWaktu(p);
+        const jan4 = new Date(parseInt(yr),0,4);
+        const weekStart = new Date(jan4);
+        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
+        weekStart.setHours(0,0,0,0);
+        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+        return d >= weekStart && d <= weekEnd;
+      });
     }
   } else if(periodType === 'bulanan'){
     const bln = document.getElementById('lap-bulan').value;
@@ -3468,7 +3185,7 @@ function _downloadFilteredV21Impl(){
   const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
   XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
   showToast('✅ Laporan 3 sheet berhasil diunduh!');
-}
+};
 </script>
 
 <!-- MODAL KONFIRMASI SIMPAN -->
@@ -3493,3 +3210,4 @@ function _downloadFilteredV21Impl(){
 </div>
 </body>
 </html>
+</script>
