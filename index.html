@@ -8,6 +8,7 @@
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -113,14 +114,14 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:var(--surface2)}
 .user-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
 .avatar-admin{background:linear-gradient(135deg,#2563EB,#7c3aed)}
-.avatar-bos{background:linear-gradient(135deg,#d97706,#dc2626)}
+.avatar-pemilik{background:linear-gradient(135deg,#d97706,#dc2626)}
 /* No more staff role */.user-name{font-size:12px;font-weight:600;color:var(--text-body);line-height:1.2}
 .user-role{font-size:10px;color:var(--text3)}
 .role-badge{display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:100px;margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
 .role-badge-admin{background:#dbeafe;color:#1d4ed8}
-.role-badge-bos{background:#fef3c7;color:#b45309}
+.role-badge-pemilik{background:#fef3c7;color:#b45309}
 [data-theme="dark"] .role-badge-admin{background:rgba(37,99,235,.2);color:#60a5fa}
-[data-theme="dark"] .role-badge-bos{background:rgba(180,83,9,.2);color:#fbbf24}
+[data-theme="dark"] .role-badge-pemilik{background:rgba(180,83,9,.2);color:#fbbf24}
 .logout-btn{display:flex;align-items:center;gap:6px;width:100%;margin-top:8px;padding:8px 12px;border-radius:var(--radius);border:none;background:none;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .12s}
 .logout-btn:hover{background:var(--red-soft);color:var(--red)}
 .logout-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
@@ -338,7 +339,7 @@ input[type="date"],input[type="month"],input[type="week"]{
 
 /* ROLE GUARD */
 .admin-only{display:flex!important}
-.bos-only{display:flex!important}
+.pemilik-only{display:flex!important}
 /* No more staff role */
 
 /* PERIOD TABS */
@@ -430,9 +431,9 @@ img,video,iframe,table{max-width:100%}
 
 
 /* role guard moved above */
-/* bos cannot input pesanan or edit data */
-body.role-bos #nav-input-pesanan{display:none!important}
-body.role-bos .btn-hapus-pesanan{display:none!important}
+/* pemilik cannot input pesanan or edit data */
+body.role-pemilik #nav-input-pesanan{display:none!important}
+body.role-pemilik .btn-hapus-pesanan{display:none!important}
 
 /* DP / STATUS LUNAS */
 .dp-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
@@ -598,15 +599,15 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
       Stok Motor
     </button>
     <div class="nav-label">Keuangan</div>
-    <button class="nav-item admin-only bos-only" onclick="goPage('keuangan',this)">
+    <button class="nav-item admin-only pemilik-only" onclick="goPage('keuangan',this)">
       <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Rekap Keuangan
     </button>
-    <button class="nav-item admin-only bos-only" onclick="goPage('pengeluaran',this)">
+    <button class="nav-item admin-only pemilik-only" onclick="goPage('pengeluaran',this)">
       <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M15 9H9M15 12H9M12 15H9"/></svg>
       Biaya Operasional
     </button>
-    <button class="nav-item admin-only bos-only" onclick="goPage('laporan',this)">
+    <button class="nav-item admin-only pemilik-only" onclick="goPage('laporan',this)">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Unduh Laporan
     </button>
@@ -1490,46 +1491,62 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== AUTH =====
-const USERS = {
-  'admin@rentalmotor.com': {pass:'admin123', name:'Admin Utama', role:'Administrator', roleKey:'admin', avatar:'AD'},
-  'bos@rentalmotor.com':   {pass:'bos123',   name:'Pemilik',    role:'Pemilik Usaha', roleKey:'bos',   avatar:'PO'},
-};
-let currentUser = JSON.parse(sessionStorage.getItem('rm_user')||'null');
-let selectedRole = 'admin';
+// ===== SUPABASE INIT =====
+const SUPABASE_URL  = 'https://dijniloizbdmppwgefdv.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpam5pbG9pemJkbXBwd2dlZmR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4MjUxOTMsImV4cCI6MjA5NDQwMTE5M30.DwxXfVx909HU4yCU2s88Nb5Py0dBqqXfbwDtt7XCVN0';
+const sb = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
-function selectRole(r){
-  selectedRole = r;
-  document.querySelectorAll('.role-btn').forEach(b=>b.classList.remove('sel'));
-  const btn = document.getElementById('role-btn-'+r);
-  if(btn) btn.classList.add('sel');
+// ===== AUTH (Supabase Auth) =====
+let currentUser = null;
+
+// Ambil info user dari Supabase session
+function buildUserFromSession(session){
+  if(!session||!session.user) return null;
+  const meta = session.user.user_metadata || {};
+  const role = meta.role || 'admin';
+  const roleLabels = {admin:'Administrator', pemilik:'Pemilik Usaha'};
+  const avatarMap  = {admin:'AD', pemilik:'PO'};
+  const nameMap    = {admin:'Admin Utama', pemilik:'Pemilik'};
+  return {
+    email    : session.user.email,
+    name     : meta.name || nameMap[role] || 'User',
+    role     : roleLabels[role] || 'Administrator',
+    roleKey  : role,
+    avatar   : meta.avatar || avatarMap[role] || 'US',
+  };
 }
 
-function doLogin(){
+async function doLogin(){
   const email = document.getElementById('login-email').value.trim().toLowerCase();
-  const pass = document.getElementById('login-pass').value;
-  const err = document.getElementById('login-error');
-  const user = USERS[email];
-  if(!user || user.pass !== pass){
-    err.classList.add('show');
-    return;
-  }
+  const pass  = document.getElementById('login-pass').value;
+  const err   = document.getElementById('login-error');
+  const btn   = document.querySelector('.login-btn');
+
+  if(!email||!pass){ err.textContent='Email dan password wajib diisi.'; err.classList.add('show'); return; }
+
+  btn.textContent = 'Masuk...'; btn.disabled = true;
   err.classList.remove('show');
-  currentUser = {email, name:user.name, role:user.role, roleKey:user.roleKey, avatar:user.avatar};
-  sessionStorage.setItem('rm_user', JSON.stringify(currentUser));
-  const lp = document.getElementById('login-page');
-  lp.classList.remove('show');
-  setTimeout(()=>{
+
+  try{
+    const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
+    if(error) throw error;
+    currentUser = buildUserFromSession(data.session);
+    document.getElementById('login-page').classList.remove('show');
     applyUserUI();
-    loadAllData();
-      renderPesanan();
-    showToast('Selamat datang, '+user.name+'!');
-  }, 300);
+    await loadAllData();
+    renderPesanan();
+    showToast('Selamat datang, '+currentUser.name+'!');
+  }catch(e){
+    err.textContent = 'Email atau password salah. Coba lagi.';
+    err.classList.add('show');
+  }finally{
+    btn.textContent = 'Masuk ke Dashboard'; btn.disabled = false;
+  }
 }
 
-function doLogout(){
+async function doLogout(){
   if(!confirm('Yakin ingin keluar?')) return;
-  sessionStorage.removeItem('rm_user');
+  await sb.auth.signOut();
   currentUser = null;
   document.getElementById('login-page').classList.add('show');
 }
@@ -1538,15 +1555,14 @@ function applyUserUI(){
   if(!currentUser) return;
   document.getElementById('user-display-name').textContent = currentUser.name;
   document.getElementById('user-display-role').textContent = currentUser.role;
-  document.getElementById('user-avatar-txt').textContent = currentUser.avatar;
+  document.getElementById('user-avatar-txt').textContent   = currentUser.avatar;
   const rk = currentUser.roleKey || 'admin';
-  const avatarEl = document.getElementById('user-avatar-txt');
-  avatarEl.className = 'user-avatar avatar-'+rk;
+  document.getElementById('user-avatar-txt').className = 'user-avatar avatar-'+rk;
   const badgeEl = document.getElementById('user-role-badge');
-  const badgeLabels = {admin:'Admin', bos:'Pemilik'};
+  const badgeLabels = {admin:'Admin', pemilik:'Pemilik'};
   badgeEl.textContent = badgeLabels[rk] || rk;
-  badgeEl.className = 'role-badge role-badge-'+rk;
-  document.body.classList.remove('role-admin','role-bos');
+  badgeEl.className   = 'role-badge role-badge-'+rk;
+  document.body.classList.remove('role-admin','role-pemilik');
   document.body.classList.add('role-'+rk);
 }
 
@@ -1562,12 +1578,24 @@ function applyDark(){
 function toggleDark(){ isDark=!isDark; localStorage.setItem('rm_dark',isDark?'1':'0'); applyDark(); }
 applyDark();
 
-// Check session on load
-if(currentUser){
-  document.getElementById('login-page').classList.remove('show');
-  applyUserUI();
-  loadAllData();
-}
+// ===== SESSION PERSISTENCE — cek session saat buka app =====
+(async ()=>{
+  const {data} = await sb.auth.getSession();
+  if(data && data.session){
+    currentUser = buildUserFromSession(data.session);
+    document.getElementById('login-page').classList.remove('show');
+    applyUserUI();
+    await loadAllData();
+    renderPesanan();
+  }
+  // Listen perubahan auth state (logout dari tab lain, expired, dll)
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(event === 'SIGNED_OUT'){
+      currentUser = null;
+      document.getElementById('login-page').classList.add('show');
+    }
+  });
+})();
 
 // ===== DATA =====
 let pesanan = [];
@@ -1577,67 +1605,168 @@ let pengeluaran = [];
 const DENDA_PER_HARI = 50000; // tidak dipakai lagi
 let DENDA_PER_JAM = parseInt(localStorage.getItem('rm_denda_perjam')||'10000');
 
+
 // ===== SUPABASE HELPERS =====
-// Upload gambar — disimpan sebagai base64 di localStorage
-async function uploadImg(base64DataURL, folder, filename){
-  if(!base64DataURL) return null;
-  // Simpan langsung base64, return sebagai "URL" internal
-  return base64DataURL;
+function setDbStatus(ok, msg){
+  let el = document.getElementById('db-status-dot');
+  if(!el){
+    el = document.createElement('span');
+    el.id = 'db-status-dot';
+    el.style = 'font-size:11px;font-weight:600;padding:3px 10px;border-radius:100px;margin-right:6px;';
+    const tr = document.querySelector('.topbar-right');
+    if(tr) tr.prepend(el);
+  }
+  el.textContent = ok ? '🟢 Supabase' : '🔴 '+msg;
+  el.style.background = ok ? 'var(--green-soft)' : 'var(--red-soft)';
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
 
-// Format helpers (kept for backup/restore compatibility)
+// Images stored as base64 directly in DB column (keep existing behaviour)
+async function uploadImg(base64DataURL, folder, filename){
+  if(!base64DataURL) return null;
+  return base64DataURL;
+}
 function dbToPesanan(r){ return r; }
 function pesananToDb(p){ return p; }
-
-// Gambar: ambil URL langsung dari field pesanan (sudah di Supabase Storage)
 function getKtpImg(p){ return p?p.ktpImgUrl||null:null; }
 function getBuktiImg(p){ return p?p.buktiImgUrl||null:null; }
 
-// saveAll: tidak dipakai lagi untuk pesanan, tiap operasi langsung ke Supabase
-// Tapi dipertahankan untuk stok/pengeluaran backup lokal sebagai fallback
+// saveAll: local backup + sync marker (Supabase ops are done immediately in each function)
 function saveAll(){
-  localStorage.setItem('rm_pesanan',     JSON.stringify(pesanan));
-  localStorage.setItem('rm_stok',        JSON.stringify(stokData));
-  localStorage.setItem('rm_stok_log',    JSON.stringify(stokLog));
-  localStorage.setItem('rm_pengeluaran', JSON.stringify(pengeluaran));
+  try{
+    localStorage.setItem('rm_pesanan',     JSON.stringify(pesanan));
+    localStorage.setItem('rm_stok',        JSON.stringify(stokData));
+    localStorage.setItem('rm_stok_log',    JSON.stringify(stokLog));
+    localStorage.setItem('rm_pengeluaran', JSON.stringify(pengeluaran));
+  }catch(e){}
 }
-
-// Dummy compat functions (dulu untuk localStorage img, sekarang no-op)
 function saveImgSeparate(){}
 function reindexImgKeys(){}
 function removeImgKeys(){}
 
-// ===== LOAD DATA FROM LOCALSTORAGE =====
-function loadAllData(){
+// ===== SUPABASE CRUD HELPERS =====
+// Upsert single pesanan row (insert or update by id)
+async function sbUpsertPesanan(entry){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('pesanan').upsert([entry], {onConflict:'id'});
+    if(error) console.warn('sbUpsertPesanan error:', error.message);
+  }catch(e){ console.warn('sbUpsertPesanan exception:', e); }
+}
+async function sbDeletePesanan(id){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('pesanan').delete().eq('id', id);
+    if(error) console.warn('sbDeletePesanan error:', error.message);
+  }catch(e){}
+}
+async function sbUpsertStok(entry){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('stok').upsert([entry], {onConflict:'id'});
+    if(error) console.warn('sbUpsertStok error:', error.message);
+  }catch(e){}
+}
+async function sbDeleteStok(id){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('stok').delete().eq('id', id);
+    if(error) console.warn('sbDeleteStok error:', error.message);
+  }catch(e){}
+}
+async function sbUpsertPengeluaran(entry){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('pengeluaran').upsert([entry], {onConflict:'id'});
+    if(error) console.warn('sbUpsertPengeluaran error:', error.message);
+  }catch(e){}
+}
+async function sbDeletePengeluaran(id){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('pengeluaran').delete().eq('id', id);
+    if(error) console.warn('sbDeletePengeluaran error:', error.message);
+  }catch(e){}
+}
+async function sbUpsertStokLog(entry){
+  if(!sb) return;
+  try{
+    const {error} = await sb.from('stok_log').insert([entry]);
+    if(error) console.warn('sbUpsertStokLog error:', error.message);
+  }catch(e){}
+}
+
+// ===== LOAD DATA FROM SUPABASE (with localStorage fallback) =====
+async function loadAllData(){
+  // Show loading state
+  setDbStatus(true, '');
+  // Try Supabase first
+  if(sb){
+    try{
+      const [resPesanan, resStok, resStokLog, resPeng] = await Promise.all([
+        sb.from('pesanan').select('*').order('waktu', {ascending:true}),
+        sb.from('stok').select('*'),
+        sb.from('stok_log').select('*').order('id', {ascending:false}).limit(200),
+        sb.from('pengeluaran').select('*').order('waktu', {ascending:false}),
+      ]);
+
+      if(resPesanan.error) throw resPesanan.error;
+      pesanan     = resPesanan.data  || [];
+      stokLog     = resStokLog.data  || [];
+      pengeluaran = resPeng.data     || [];
+
+      if(resStok.error || !resStok.data || !resStok.data.length){
+        // Fallback: init default stok if table empty
+        const defStok = [
+          {id:'beat',      name:'Honda Beat',       harga:100000, total:10, avail:10},
+          {id:'vario125',  name:'Honda Vario 125',  harga:120000, total:8,  avail:8},
+          {id:'vario160',  name:'Honda Vario 160',  harga:150000, total:7,  avail:7},
+          {id:'nmax',      name:'Yamaha NMAX',      harga:175000, total:6,  avail:6},
+          {id:'vespa',     name:'Vespa Matic',      harga:200000, total:4,  avail:4},
+        ];
+        stokData = defStok;
+        // Seed default stok to Supabase
+        for(const s of defStok) await sbUpsertStok(s);
+      } else {
+        stokData = resStok.data;
+      }
+      setDbStatus(true, '');
+      // Sync local backup
+      saveAll();
+    }catch(e){
+      console.warn('Supabase load failed, using localStorage:', e);
+      setDbStatus(false, 'Offline');
+      _loadFromLocalStorage();
+    }
+  } else {
+    setDbStatus(false, 'No Supabase');
+    _loadFromLocalStorage();
+  }
+  buildMotorDropdown();
+  renderDashboard();
+}
+
+function _loadFromLocalStorage(){
   try{
     const savedPesanan = localStorage.getItem('rm_pesanan');
     const savedStok    = localStorage.getItem('rm_stok');
     const savedStokLog = localStorage.getItem('rm_stok_log');
     const savedPeng    = localStorage.getItem('rm_pengeluaran');
-
     pesanan     = savedPesanan  ? JSON.parse(savedPesanan)  : [];
     stokLog     = savedStokLog  ? JSON.parse(savedStokLog)  : [];
     pengeluaran = savedPeng     ? JSON.parse(savedPeng)     : [];
-
     if(savedStok){
       stokData = JSON.parse(savedStok);
     } else {
-      // Default stok awal
       stokData = [
-        {id:'beat',      name:'Honda Beat',        harga:100000, total:10, avail:10},
-        {id:'vario125',  name:'Honda Vario 125',   harga:120000, total:8,  avail:8},
-        {id:'vario160',  name:'Honda Vario 160',   harga:150000, total:7,  avail:7},
-        {id:'nmax',      name:'Yamaha NMAX',       harga:175000, total:6,  avail:6},
-        {id:'vespa',     name:'Vespa Matic',       harga:200000, total:4,  avail:4},
+        {id:'beat',      name:'Honda Beat',       harga:100000, total:10, avail:10},
+        {id:'vario125',  name:'Honda Vario 125',  harga:120000, total:8,  avail:8},
+        {id:'vario160',  name:'Honda Vario 160',  harga:150000, total:7,  avail:7},
+        {id:'nmax',      name:'Yamaha NMAX',      harga:175000, total:6,  avail:6},
+        {id:'vespa',     name:'Vespa Matic',      harga:200000, total:4,  avail:4},
       ];
-      localStorage.setItem('rm_stok', JSON.stringify(stokData));
     }
-    buildMotorDropdown();
-    renderDashboard();
-  }catch(e){
-    console.error('loadAllData error:', e);
-    showToast('⚠️ Gagal memuat data lokal');
-  }
+  }catch(e){ console.error('localStorage load error:', e); }
 }
 
 function showLoadingOverlay(show){}
@@ -2165,6 +2294,9 @@ async function simpanPesanan(){
     stokData[si].avail--;
   }
   saveAll();
+  // Sync to Supabase
+  await sbUpsertPesanan(entry);
+  if(si>=0) await sbUpsertStok(stokData[si]);
   document.getElementById('badge-pesanan').textContent=pesanan.length;
   const detail=document.getElementById('konfirmasi-simpan-detail');
   if(detail) detail.textContent=nama+' · '+mname+' · '+dur+' hari · '+rp(total);
@@ -2370,7 +2502,10 @@ async function hapusPesanan(idx){
     const si=stokData.findIndex(s=>s.name===p.motor);
     if(si>=0) stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);
   }
-  pesanan.splice(idx,1);saveAll();renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
+  pesanan.splice(idx,1);saveAll();
+  await sbDeletePesanan(p.id);
+  if(p.status==='Aktif'){ const si2=stokData.findIndex(s=>s.name===p.motor); if(si2>=0) await sbUpsertStok(stokData[si2]); }
+  renderPesanan();renderDashboard();showToast('Pesanan berhasil dihapus');
 }
 function openEditStatus(idx){curEditIdx=idx;document.getElementById('mod-nama').value=pesanan[idx].nama;document.getElementById('mod-status').value=pesanan[idx].status;document.getElementById('modal-status').classList.add('show');}
 
@@ -2445,6 +2580,10 @@ async function saveEditPesanan(){
   const dbRow = pesananToDb(updated);
   pesanan[curEditIdx]=updated;
   saveAll();
+  await sbUpsertPesanan(updated);
+  // Also sync stok changes
+  if(siOld>=0) await sbUpsertStok(stokData[siOld]);
+  if(siNew>=0 && siNew!==siOld) await sbUpsertStok(stokData[siNew]);
   closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
 }
 async function saveStatus(){
@@ -2453,6 +2592,8 @@ async function saveStatus(){
   if(si>=0){if(oldStatus==='Aktif'&&newStatus!=='Aktif')stokData[si].avail=Math.min(stokData[si].avail+1,stokData[si].total);if(oldStatus!=='Aktif'&&newStatus==='Aktif'&&stokData[si].avail>0)stokData[si].avail--;}
   pesanan[curEditIdx].status=newStatus;
   saveAll();
+  await sbUpsertPesanan(pesanan[curEditIdx]);
+  if(si>=0) await sbUpsertStok(stokData[si]);
   closeModal();renderPesanan();renderDashboard();showToast('Status diperbarui');
 }
 function openTambahMotor(){
@@ -2475,6 +2616,8 @@ async function simpanMotorBaru(){
   stokData.push({id:newId,name:nama,harga,total,avail:total});
   stokLog.unshift(logEntry);
   saveAll();
+  await sbUpsertStok({id:newId,name:nama,harga,total,avail:total});
+  await sbUpsertStokLog({...logEntry, id: Date.now()});
   buildMotorDropdown();
   document.getElementById('modal-tambah-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('✅ Motor baru "'+nama+'" berhasil ditambahkan');
@@ -2492,10 +2635,13 @@ async function konfirmasiHapusMotor(){
   if(hapusMotorIdx===null)return;
   const s=stokData[hapusMotorIdx];
   const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
+  const motorId = s.id;
   stokLog.unshift(logEntry);
   stokData.splice(hapusMotorIdx,1);
   hapusMotorIdx=null;
   saveAll();
+  await sbDeleteStok(motorId);
+  await sbUpsertStokLog({...logEntry, id: Date.now()});
   buildMotorDropdown();
   document.getElementById('modal-hapus-motor').classList.remove('show');
   renderStok();renderDashboard();showToast('Motor berhasil dihapus');
@@ -2510,6 +2656,8 @@ async function saveStok(){
   stokLog.unshift(logEntry);
   stokData[curStokIdx].total=newTotal;stokData[curStokIdx].avail=Math.min(newAvail,newTotal);
   saveAll();
+  await sbUpsertStok(stokData[curStokIdx]);
+  await sbUpsertStokLog({...logEntry, id: Date.now()});
   buildMotorDropdown();closeModal();renderStok();renderDashboard();showToast('Stok diperbarui');
 }
 function closeModal(){document.getElementById('modal-status').classList.remove('show');document.getElementById('modal-stok').classList.remove('show');document.getElementById('modal-hapus-motor').classList.remove('show');}
@@ -2570,6 +2718,8 @@ async function toggleBlacklist(ktpNo, hp){
   const isNowBl = target[0].blacklist;
   const hp2 = target[0].hp;
   saveAll();
+  // Sync all affected pesanan rows to Supabase
+  for(const p of target){ await sbUpsertPesanan(p); }
   renderKonsumen();renderPesanan();
 }
 
@@ -2846,10 +2996,10 @@ function backupData(){
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
 }
-function restoreData(e){
+async function restoreData(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=function(ev){
+  reader.onload=async function(ev){
     try{
       const d=JSON.parse(ev.target.result);
       if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}
@@ -2859,10 +3009,18 @@ function restoreData(e){
       stokLog=d.stokLog||[];
       pengeluaran=d.pengeluaran||[];
       saveAll();
-      buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan');
+      // Bulk sync to Supabase
+      if(sb){
+        showToast('⏳ Menyinkronkan ke Supabase...');
+        try{
+          if(pesanan.length) await sb.from('pesanan').upsert(pesanan, {onConflict:'id'});
+          if(stokData.length) await sb.from('stok').upsert(stokData, {onConflict:'id'});
+          if(pengeluaran.length) await sb.from('pengeluaran').upsert(pengeluaran, {onConflict:'id'});
+        }catch(e){ console.warn('Restore sync error:', e); }
+      }
+      buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan & disinkronkan');
     }catch(e){showToast('Gagal membaca file backup');}
   };
-  reader.readAsText(file);e.target.value='';
   reader.readAsText(file);e.target.value='';
 }
 async function resetSemuaData(){
@@ -2877,6 +3035,15 @@ async function resetSemuaData(){
     {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}
   ];
   saveAll();
+  // Reset Supabase tables
+  if(sb){
+    try{
+      await sb.from('pesanan').delete().neq('id',0);
+      await sb.from('pengeluaran').delete().neq('id',0);
+      await sb.from('stok_log').delete().neq('id',0);
+      await sb.from('stok').upsert(stokData, {onConflict:'id'});
+    }catch(e){ console.warn('Reset Supabase error:', e); }
+  }
   buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
 }
 
@@ -2922,9 +3089,9 @@ async function tambahPengeluaran(){
     oleh: currentUser ? currentUser.name : 'Admin',
     waktu: new Date().toISOString()
   };
-  entry.id = Date.now();
   pengeluaran.unshift(entry);
   saveAll();
+  await sbUpsertPengeluaran(entry);
   resetFormPengeluaran();
   renderPengeluaran();
   updatePengRekapTop();
@@ -2935,6 +3102,7 @@ async function hapusPengeluaran(id){
   if(!confirm('Hapus data pengeluaran ini?')) return;
   pengeluaran = pengeluaran.filter(p => p.id !== id);
   saveAll();
+  await sbDeletePengeluaran(id);
   renderPengeluaran();
   updatePengRekapTop();
   showToast('Pengeluaran dihapus');
