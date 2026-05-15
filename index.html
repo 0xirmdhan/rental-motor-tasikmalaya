@@ -837,7 +837,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="fg" id="fg-jam-mulai">
             <label>Jam Ambil</label>
-            <input type="time" id="new-jam-mulai" value="08:00" onchange="calcNew()">
+            <input type="time" id="new-jam-mulai" value="00:00" onchange="calcNew()">
           </div>
           <div class="fg" id="fg-selesai">
             <label>Tanggal Selesai</label>
@@ -846,7 +846,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="fg" id="fg-jam-selesai">
             <label>Jam Kembali</label>
-            <input type="time" id="new-jam-selesai" value="08:00" onchange="calcNew()">
+            <input type="time" id="new-jam-selesai" value="00:00" onchange="calcNew()">
           </div>
         </div>
         <div class="form-row single">
@@ -1142,34 +1142,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       </div>
       <!-- PENGATURAN DENDA -->
       <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><div class="card-title">⚙️ Pengaturan Denda Keterlambatan</div></div>
-        <div style="padding:20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
-          <div class="fg" style="flex:1;min-width:200px">
-            <label>Denda per Jam (Rp)</label>
-            <input type="number" id="setting-denda" placeholder="10000" min="0"
-              value="" oninput="previewDenda(this.value)">
+        <div class="card-header"><div class="card-title">Pengaturan Denda Keterlambatan</div></div>
+        <div style="padding:20px">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Atur denda per jam untuk setiap jenis motor. Jika motor tidak diatur, denda default akan digunakan.</p>
+          <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+            <div class="fg" style="flex:1;min-width:200px">
+              <label>Denda Default per Jam (Rp)</label>
+              <input type="number" id="setting-denda" placeholder="10000" min="0" oninput="previewDenda(this.value)">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:11px;color:var(--text3)">Denda default saat ini</span>
+              <span id="denda-current" style="font-size:16px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace"></span>
+            </div>
+            <button class="btn btn-dark" onclick="saveDenda()">Simpan Default</button>
           </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;color:var(--text3)">Denda saat ini</span>
-            <span id="denda-current" style="font-size:16px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace"></span>
+          <div>
+            <label style="font-size:13px;font-weight:600;display:block;margin-bottom:12px">Denda per Motor</label>
+            <div id="denda-per-motor-list" style="display:flex;flex-direction:column;gap:10px"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:12px" onclick="saveDendaPerMotor()">Simpan Denda per Motor</button>
           </div>
-          <button class="btn btn-dark" onclick="saveDenda()">Simpan Denda</button>
-        </div>
-      </div>
-
-      <!-- PENGATURAN DENDA -->
-      <div class="card" style="margin-bottom:16px">
-        <div class="card-header"><div class="card-title">⚙️ Pengaturan Denda Keterlambatan</div></div>
-        <div style="padding:20px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
-          <div class="fg" style="flex:1;min-width:200px">
-            <label>Denda per Jam (Rp)</label>
-            <input type="number" id="setting-denda" placeholder="10000" min="0" oninput="previewDenda(this.value)">
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;color:var(--text3)">Denda saat ini</span>
-            <span id="denda-current" style="font-size:16px;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace"></span>
-          </div>
-          <button class="btn btn-dark" onclick="saveDenda()">Simpan</button>
         </div>
       </div>
 
@@ -1355,9 +1346,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
-      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="08:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Ambil</label><input type="time" id="e-jam-mulai" value="00:00" onchange="calcEdit()"></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
-      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="08:00" onchange="calcEdit()"></div>
+      <div class="fg"><label>Jam Kembali</label><input type="time" id="e-jam-selesai" value="00:00" onchange="calcEdit()"></div>
     </div>
     <div class="modal-row single">
       <div class="fg"><label>Durasi</label><input type="text" id="e-durasi" readonly placeholder="—"></div>
@@ -1424,7 +1415,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="modal-title">Hapus Unit Motor</div>
     <div class="modal-fields">
       <div class="fg"><label>Motor</label><input type="text" id="mod-hapus-motor-name" readonly></div>
-      <p style="font-size:13px;color:var(--red);line-height:1.5;padding:8px 0">⚠️ Motor yang dihapus akan hilang dari daftar. Pastikan tidak ada pesanan aktif untuk motor ini.</p>
+      <p style="font-size:13px;color:var(--red);line-height:1.5;padding:8px 0">Motor yang dihapus akan hilang dari daftar. Pastikan tidak ada pesanan aktif untuk motor ini.</p>
     </div>
     <div class="modal-actions">
       <button class="btn" style="background:var(--red-soft);color:var(--red);border:none" onclick="konfirmasiHapusMotor()">Ya, Hapus Motor</button>
@@ -1436,7 +1427,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <!-- MODAL TAMBAH MOTOR BARU -->
 <div class="modal-bg" id="modal-tambah-motor" onclick="handleModalBgClick(event,'modal-tambah-motor')">
   <div class="modal-box">
-    <div class="modal-title">➕ Tambah Unit Motor Baru</div>
+    <div class="modal-title">Tambah Unit Motor Baru</div>
     <div class="modal-fields">
       <div class="fg" id="tmfg-nama"><label>Nama Motor</label><input type="text" id="tm-nama" placeholder="Contoh: Honda Scoopy, Yamaha Aerox ..."><span class="field-error">Nama motor wajib diisi</span></div>
       <div class="fg" id="tmfg-harga"><label>Harga Sewa / Hari (Rp)</label><input type="number" id="tm-harga" placeholder="Contoh: 130000" min="0"><span class="field-error">Harga wajib diisi</span></div>
@@ -1645,7 +1636,7 @@ function setDbStatus(ok, msg){
     const tr = document.querySelector('.topbar-right');
     if(tr) tr.prepend(el);
   }
-  el.textContent = ok ? '🟢 Supabase' : '🔴 '+msg;
+  el.textContent = ok ? 'Supabase' : ''+msg;
   el.style.background = ok ? 'var(--green-soft)' : 'var(--red-soft)';
   el.style.color = ok ? 'var(--green)' : 'var(--red)';
 }
@@ -1852,22 +1843,23 @@ function lunasPill(p){
   return`<span class="pill pill-amber">DP ${pct}%</span>`;
 }
 
-// Hitung denda keterlambatan PER JAM
+// Hitung denda keterlambatan PER JAM (per motor)
 function hitungDenda(p){
   if(p.status!=='Aktif'||!p.selesai) return 0;
-  const jamKembali = p.jamSelesai||'08:00';
+  const jamKembali = p.jamSelesai||'00:00';
   const [hh,mm] = jamKembali.split(':').map(Number);
   const batasWaktu = new Date(p.selesai);
   batasWaktu.setHours(hh, mm, 0, 0);
   const now = new Date();
   const selisihMs = now - batasWaktu;
   if(selisihMs <= 0) return 0;
-  const jamTerlambat = Math.ceil(selisihMs / 3600000); // ceil ke atas
-  return jamTerlambat * DENDA_PER_JAM;
+  const jamTerlambat = Math.ceil(selisihMs / 3600000);
+  const tarifDenda = (typeof getDendaMotor === 'function') ? getDendaMotor(p.motor) : DENDA_PER_JAM;
+  return jamTerlambat * tarifDenda;
 }
 function getJamTerlambat(p){
   if(p.status!=='Aktif'||!p.selesai) return 0;
-  const jamKembali = p.jamSelesai||'08:00';
+  const jamKembali = p.jamSelesai||'00:00';
   const [hh,mm] = jamKembali.split(':').map(Number);
   const batasWaktu = new Date(p.selesai);
   batasWaktu.setHours(hh, mm, 0, 0);
@@ -1878,7 +1870,7 @@ function getJamTerlambat(p){
 }
 function getSisaWaktu(p){
   if(p.status!=='Aktif'||!p.selesai) return null;
-  const jamKembali = p.jamSelesai||'08:00';
+  const jamKembali = p.jamSelesai||'00:00';
   const [hh,mm] = jamKembali.split(':').map(Number);
   const batasWaktu = new Date(p.selesai);
   batasWaktu.setHours(hh, mm, 0, 0);
@@ -2012,7 +2004,7 @@ function renderDashboard(){
   const jList=document.getElementById('jatuh-list');
   if(!allAlert.length){
     jBadge.textContent='Aman';jBadge.className='jatuh-badge none';
-    jList.innerHTML='<div class="jatuh-empty">✅ Tidak ada pesanan yang jatuh tempo atau terlambat.</div>';
+    jList.innerHTML='<div class="jatuh-empty">Tidak ada pesanan yang jatuh tempo atau terlambat.</div>';
   } else {
     jBadge.textContent=allAlert.length+' pesanan';jBadge.className='jatuh-badge';
     jList.innerHTML=allAlert.map(p=>{
@@ -2020,16 +2012,16 @@ function renderDashboard(){
       const denda=hitungDenda(p);
       const jamTerlambat=getJamTerlambat(p);
       const sisaWaktu=getSisaWaktu(p);
-      const jamKembali=p.jamSelesai||'08:00';
+      const jamKembali=p.jamSelesai||'00:00';
       let statusBadge='';
       if(denda>0){
-        statusBadge=`<span class="pill pill-red">⏰ Terlambat ${jamTerlambat} jam</span>`;
+        statusBadge=`<span class="pill pill-red">Terlambat ${jamTerlambat} jam</span>`;
       } else if(sisaWaktu){
         const totalMenit=Math.floor((new Date(p.selesai+' '+jamKembali)-new Date())/60000);
         if(totalMenit<=120){
-          statusBadge=`<span class="pill pill-amber">⚡ Sisa ${sisaWaktu}</span>`;
+          statusBadge=`<span class="pill pill-amber">Sisa ${sisaWaktu}</span>`;
         } else {
-          statusBadge=`<span class="pill pill-blue">🕐 Sisa ${sisaWaktu}</span>`;
+          statusBadge=`<span class="pill pill-blue">Sisa ${sisaWaktu}</span>`;
         }
       }
       return`<div class="jatuh-item"><div><div class="jatuh-nama">${p.nama} ${statusBadge}</div><div class="jatuh-meta">${p.motor} · ${p.durasi} hari · Kembali ${formatTgl(p.selesai)} jam ${jamKembali} · ${p.hp}</div></div><div style="display:flex;gap:6px;align-items:center">${denda>0?`<span class="pill pill-amber">Denda ${rp(denda)}</span>`:''}<button class="btn btn-sm btn-ghost" onclick="openStruk(${origIdx})">Struk</button><button class="btn btn-sm btn-ghost" onclick="openEditPesanan(${origIdx})">Edit</button></div></div>`;
@@ -2082,7 +2074,8 @@ function openStruk(idx){
   const p=pesanan[idx];
   const denda=hitungDenda(p);
   const totalBayar=p.total+(p.denda||denda);
-  const terlambatHari=denda>0?denda/DENDA_PER_HARI:0;
+  const tarifDendaMotor = getDendaMotor(p.motor);
+  const jamTerlambat = denda>0 ? Math.round(denda/tarifDendaMotor) : 0;
   document.getElementById('struk-content').innerHTML=`
     <div class="struk-row"><span class="struk-label">No. Pesanan</span><span class="struk-val">#${String(idx+1).padStart(4,'0')}</span></div>
     <div class="struk-row"><span class="struk-label">Nama Penyewa</span><span class="struk-val">${p.nama}</span></div>
@@ -2091,7 +2084,7 @@ function openStruk(idx){
     <div class="struk-row"><span class="struk-label">Tanggal Mulai</span><span class="struk-val">${formatTgl(p.mulai)}</span></div>
     <div class="struk-row"><span class="struk-label">Tanggal Selesai</span><span class="struk-val">${formatTgl(p.selesai)}</span></div>
     <div class="struk-row"><span class="struk-label">Jam Ambil</span><span class="struk-val">${p.jamMulai||'08:00'}</span></div>
-    <div class="struk-row"><span class="struk-label">Jam Kembali</span><span class="struk-val">${p.jamSelesai||'08:00'}</span></div>
+    <div class="struk-row"><span class="struk-label">Jam Kembali</span><span class="struk-val">${p.jamSelesai||'00:00'}</span></div>
     <div class="struk-row"><span class="struk-label">Durasi Sewa</span><span class="struk-val">${p.durasi} hari</span></div>
     <div class="struk-row"><span class="struk-label">Metode Bayar</span><span class="struk-val">${p.payment}</span></div>
     <div class="struk-row"><span class="struk-label">Antar/Jemput</span><span class="struk-val">${p.antar}</span></div>
@@ -2099,9 +2092,9 @@ function openStruk(idx){
     <div class="struk-row"><span class="struk-label">Status</span><span class="struk-val">${p.status}</span></div>
     ${p.catatan?`<div class="struk-row"><span class="struk-label">Catatan</span><span class="struk-val">${p.catatan}</span></div>`:''}
     <div class="struk-row"><span class="struk-label">Harga Sewa</span><span class="struk-val">${rp(p.total)}</span></div>
-    ${denda>0?`<div class="struk-denda-row"><span>⚠️ Denda Keterlambatan (${terlambatHari} hari × ${rp(DENDA_PER_HARI)})</span><span>${rp(denda)}</span></div>`:''}
+    ${denda>0?`<div class="struk-denda-row"><span>Denda Keterlambatan (${jamTerlambat} jam × ${rp(tarifDendaMotor)}/jam)</span><span>${rp(denda)}</span></div>`:''}
     <div class="struk-total-row"><span>TOTAL TAGIHAN</span><span class="struk-val">${rp(totalBayar)}</span></div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID')}<br>Terima kasih telah menggunakan layanan kami 🙏</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID')}<br>Terima kasih telah menggunakan layanan kami </div>
   `;
   document.getElementById('modal-struk').classList.add('show');
 }
@@ -2140,16 +2133,16 @@ function kirimWA(){
   const totalBayar=p.total+denda;
   const msg=encodeURIComponent(
     `*Struk Rental Motor Tasikmalaya*\n`+
-    `━━━━━━━━━━━━━━━━\n`+
+    `----------------\n`+
     `Nama: ${p.nama}\n`+
     `Motor: ${p.motor}\n`+
     `Sewa: ${formatTgl(p.mulai)} s/d ${formatTgl(p.selesai)} (${p.durasi} hari)\n`+
     `Metode: ${p.payment}\n`+
     `Harga Sewa: ${rp(p.total)}\n`+
-    (denda>0?`⚠️ Denda: ${rp(denda)}\n`:'')+
+    (denda>0?`Denda: ${rp(denda)}\n`:'')+
     `*TOTAL: ${rp(totalBayar)}*\n`+
-    `━━━━━━━━━━━━━━━━\n`+
-    `Terima kasih, ${p.nama.split(' ')[0]}! 🙏`
+    `----------------\n`+
+    `Terima kasih, ${p.nama.split(' ')[0]}! `
   );
   const hp=p.hp.replace(/^0/,'62');
   window.open(`https://wa.me/${hp}?text=${msg}`,'_blank');
@@ -2320,7 +2313,7 @@ async function simpanPesanan(){
   else{const fg=document.getElementById('fg-ktp-no');fg.classList.remove('has-error');fg.querySelector('input').classList.remove('invalid');}
   if(!ktpFile&&!newKTPData){const fg=document.getElementById('fg-ktp-file');fg.classList.add('has-error');document.getElementById('ktp-upload-area-new').style.borderColor='var(--red)';valid=false;}
   else{const fg=document.getElementById('fg-ktp-file');fg.classList.remove('has-error');document.getElementById('ktp-upload-area-new').style.borderColor='';}
-  if(!valid){showToast('⚠️ Periksa kembali form — ada field yang belum diisi');reEnableBtn();return;}
+  if(!valid){showToast('Periksa kembali form — ada field yang belum diisi');reEnableBtn();return;}
   const [mname,harga]=sel.split('|');
   const dur=Math.ceil((new Date(selesai)-new Date(mulai))/86400000);
   if(dur<=0){setFieldError('fg-selesai',true,'Tanggal selesai harus setelah tanggal mulai');reEnableBtn();return;}
@@ -2430,14 +2423,14 @@ function handleKTPUpload(e,mode){
         newKTPData=compressed;
         document.getElementById('new-ktp-preview').src=compressed;
         document.getElementById('new-ktp-preview').classList.add('show');
-        document.getElementById('ktp-upload-text').textContent='✅ '+file.name;
+        document.getElementById('ktp-upload-text').textContent=''+file.name;
         document.getElementById('ktp-upload-area-new').style.borderColor='var(--green)';
         const fg=document.getElementById('fg-ktp-file');fg.classList.remove('has-error');
       } else {
         ktpDataEdit=compressed;
         document.getElementById('e-ktp-preview').src=compressed;
         document.getElementById('e-ktp-preview').classList.add('show');
-        document.getElementById('e-ktp-text').textContent='✅ '+file.name;
+        document.getElementById('e-ktp-text').textContent=''+file.name;
       }
     });
   };
@@ -2452,7 +2445,7 @@ function handleBuktiUpload(e,mode){
         newBuktiData=compressed;
         document.getElementById('new-bukti-preview').src=compressed;
         document.getElementById('new-bukti-preview').classList.add('show');
-        document.getElementById('bukti-upload-text').textContent='✅ '+file.name;
+        document.getElementById('bukti-upload-text').textContent=''+file.name;
       }
     });
   };
@@ -2572,7 +2565,7 @@ function openEditPesanan(idx){
   document.getElementById('e-nama').value=p.nama;document.getElementById('e-hp').value=p.hp;
   document.getElementById('e-mulai').value=p.mulai;document.getElementById('e-selesai').value=p.selesai;
   document.getElementById('e-jam-mulai').value=p.jamMulai||'08:00';
-  document.getElementById('e-jam-selesai').value=p.jamSelesai||'08:00';
+  document.getElementById('e-jam-selesai').value=p.jamSelesai||'00:00';
   document.getElementById('e-status').value=p.status;document.getElementById('e-catatan').value=p.catatan||'';
   document.getElementById('e-alamat').value=p.alamat&&p.alamat!=='-'?p.alamat:'';
   // FIX v22: isi field DP dari data pesanan sebelum calcEdit() dipanggil
@@ -2641,7 +2634,7 @@ async function saveEditPesanan(){
   // Also sync stok changes
   if(siOld>=0) await sbUpsertStok(stokData[siOld]);
   if(siNew>=0 && siNew!==siOld) await sbUpsertStok(stokData[siNew]);
-  closeAllModals();renderPesanan();renderDashboard();showToast('✅ Pesanan berhasil diperbarui');
+  closeAllModals();renderPesanan();renderDashboard();showToast('Pesanan berhasil diperbarui');
 }
 async function saveStatus(){
   const oldStatus=pesanan[curEditIdx].status;const newStatus=document.getElementById('mod-status').value;const motor=pesanan[curEditIdx].motor;
@@ -2677,13 +2670,13 @@ async function simpanMotorBaru(){
   await sbUpsertStokLog({...logEntry, id: Date.now()});
   buildMotorDropdown();
   document.getElementById('modal-tambah-motor').classList.remove('show');
-  renderStok();renderDashboard();showToast('✅ Motor baru "'+nama+'" berhasil ditambahkan');
+  renderStok();renderDashboard();showToast('Motor baru "'+nama+'" berhasil ditambahkan');
 }
 let hapusMotorIdx=null;
 function openHapusMotor(i){
   const s=stokData[i];
   const tersewa=s.total-s.avail;
-  if(tersewa>0){showToast('⚠️ Tidak bisa hapus — ada '+tersewa+' unit sedang tersewa');return;}
+  if(tersewa>0){showToast('Tidak bisa hapus — ada '+tersewa+' unit sedang tersewa');return;}
   hapusMotorIdx=i;
   document.getElementById('mod-hapus-motor-name').value=s.name+' ('+rp(s.harga)+'/hari, '+s.total+' unit)';
   document.getElementById('modal-hapus-motor').classList.add('show');
@@ -2765,11 +2758,11 @@ async function toggleBlacklist(ktpNo, hp){
     const alasan=prompt('Alasan blacklist (wajib isi):\nContoh: Motor tidak dikembalikan, Kabur, dll');
     if(!alasan){return;}
     target.forEach(p=>{p.blacklist=true;p.catatanBlacklist=alasan;});
-    showToast('⛔ Konsumen ditambahkan ke blacklist');
+    showToast('Konsumen ditambahkan ke blacklist');
   } else {
     if(!confirm('Hapus status blacklist konsumen ini?'))return;
     target.forEach(p=>{p.blacklist=false;p.catatanBlacklist='';});
-    showToast('✅ Status blacklist dihapus');
+    showToast('Status blacklist dihapus');
   }
   // Simpan blacklist ke Supabase
   const isNowBl = target[0].blacklist;
@@ -2791,7 +2784,7 @@ async function lihatKTPKonsumen(ktpNo, hp){
 <!-- MODAL KONFIRMASI SIMPAN -->
 <div class="modal-bg" id="modal-konfirmasi-simpan">
   <div class="modal-box" style="text-align:center;padding:32px 28px">
-    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">✅</div>
+    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px"></div>
     <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:6px">Pesanan Tersimpan!</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px" id="konfirmasi-simpan-detail">—</div>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -2855,7 +2848,7 @@ function renderKonsumen(){
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
-      <td>${namaDisplay}${bl?'<br><span class="pill pill-red" style="margin-top:4px;font-size:10px">⛔ BLACKLIST</span>':''}</td>
+      <td>${namaDisplay}${bl?'<br><span class="pill pill-red" style="margin-top:4px;font-size:10px">BLACKLIST</span>':''}</td>
       <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px">${hp}</td>
       <td style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${k.alamatRumah||''}">${k.alamatRumah||'<span style="color:var(--text3)">—</span>'}</td>
       <td style="font-family:\'JetBrains Mono\',monospace;font-size:11px">${ktpNo||'<span style="color:var(--text3)">—</span>'}</td>
@@ -2863,15 +2856,15 @@ function renderKonsumen(){
       <td style="font-size:12px;text-align:center">${k.totalSewa}x</td>
       <td style="font-family:\'JetBrains Mono\',monospace;font-size:12px;font-weight:600">${rp(k.totalBayar)}</td>
       <td>${bl
-        ?`<span class="pill pill-red" title="${k.catatanBlacklist||''}">⛔ BL</span>`
-        :'<span class="pill pill-green">✅ OK</span>'
+        ?`<span class="pill pill-red" title="${k.catatanBlacklist||''}">BL</span>`
+        :'<span class="pill pill-green">OK</span>'
       }</td>
       <td style="white-space:nowrap">
         ${(ktpNo||hp)?`<button class="btn btn-ghost btn-sm" onclick="lihatKTPKonsumen('${ktpNo}','${hp}')" title="Lihat KTP"><svg viewBox="0 0 24 24" style="width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> KTP</button>`:''}
         <button class="btn btn-sm ${bl?'btn-ghost':''}${!bl?' btn-ghost':''}" 
           style="${bl?'background:var(--green-soft);color:var(--green);border:1px solid #86efac':'background:var(--red-soft);color:var(--red);border:1px solid #fca5a5'}"
           onclick="toggleBlacklist('${ktpNo}','${hp}')">
-          ${bl?'✅ Hapus BL':'⛔ Blacklist'}
+          ${bl?'Hapus BL':'Blacklist'}
         </button>
       </td>
     </tr>`;
@@ -3068,14 +3061,14 @@ async function restoreData(e){
       saveAll();
       // Bulk sync to Supabase
       if(sb){
-        showToast('⏳ Menyinkronkan ke Supabase...');
+        showToast('Menyinkronkan ke Supabase...');
         try{
           if(pesanan.length) await sb.from('pesanan').upsert(pesanan, {onConflict:'id'});
           if(stokData.length) await sb.from('stok').upsert(stokData, {onConflict:'id'});
           if(pengeluaran.length) await sb.from('pengeluaran').upsert(pengeluaran, {onConflict:'id'});
         }catch(e){ console.warn('Restore sync error:', e); }
       }
-      buildMotorDropdown();renderDashboard();showToast('✅ Data berhasil dipulihkan & disinkronkan');
+      buildMotorDropdown();renderDashboard();showToast('Data berhasil dipulihkan & disinkronkan');
     }catch(e){showToast('Gagal membaca file backup');}
   };
   reader.readAsText(file);e.target.value='';
@@ -3114,7 +3107,7 @@ function handlePengBuktiUpload(e){
     pengBuktiData = ev.target.result;
     document.getElementById('peng-bukti-preview').src = ev.target.result;
     document.getElementById('peng-bukti-preview').classList.add('show');
-    document.getElementById('peng-bukti-text').textContent = '✅ '+file.name;
+    document.getElementById('peng-bukti-text').textContent = ''+file.name;
     document.getElementById('peng-bukti-area').style.borderColor = 'var(--green)';
   };
   reader.readAsDataURL(file);
@@ -3137,8 +3130,8 @@ async function tambahPengeluaran(){
   const kat = document.getElementById('peng-kat').value;
   const jumlah = parseInt(document.getElementById('peng-jumlah').value)||0;
   const ket = document.getElementById('peng-ket').value.trim();
-  if(!tgl){showToast('⚠️ Tanggal wajib diisi');return;}
-  if(!jumlah||jumlah<=0){showToast('⚠️ Jumlah pengeluaran tidak valid');return;}
+  if(!tgl){showToast('Tanggal wajib diisi');return;}
+  if(!jumlah||jumlah<=0){showToast('Jumlah pengeluaran tidak valid');return;}
   const entry = {
     id: Date.now(),
     tgl, kat, jumlah, ket,
@@ -3152,7 +3145,7 @@ async function tambahPengeluaran(){
   resetFormPengeluaran();
   renderPengeluaran();
   updatePengRekapTop();
-  showToast('✅ Pengeluaran berhasil dicatat');
+  showToast('Pengeluaran berhasil dicatat');
 }
 
 async function hapusPengeluaran(id){
@@ -3173,7 +3166,7 @@ function lihatBuktiPengeluaran(id){
 <!-- MODAL KONFIRMASI SIMPAN -->
 <div class="modal-bg" id="modal-konfirmasi-simpan">
   <div class="modal-box" style="text-align:center;padding:32px 28px">
-    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">✅</div>
+    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px"></div>
     <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:6px">Pesanan Tersimpan!</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px" id="konfirmasi-simpan-detail">—</div>
     <div style="display:flex;flex-direction:column;gap:10px">
@@ -3409,29 +3402,12 @@ document.addEventListener('click', function(e){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
 
 // ===== SETTINGS DENDA =====
-function previewDenda(val){
-  const n=parseInt(val)||0;
-  document.getElementById('denda-current').textContent=rp(n)+'/jam';
-}
-function saveDenda(){
-  const val=parseInt(document.getElementById('setting-denda').value)||0;
-  if(val<0){showToast('Denda tidak boleh minus');return;}
-  DENDA_PER_JAM=val;
-  localStorage.setItem('rm_denda_perjam',val);
-  showToast('✅ Denda diperbarui: '+rp(val)+'/jam');
-}
-function initDendaUI(){
-  const el=document.getElementById('setting-denda');
-  if(el){ el.value=DENDA_PER_JAM; previewDenda(DENDA_PER_JAM); }
+let DENDA_PER_MOTOR = JSON.parse(localStorage.getItem('rm_denda_per_motor')||'{}');
+
+function getDendaMotor(motorName){
+  return DENDA_PER_MOTOR[motorName] !== undefined ? DENDA_PER_MOTOR[motorName] : DENDA_PER_JAM;
 }
 
-// Auto-refresh countdown setiap 1 menit
-setInterval(()=>{
-  const dashPage=document.getElementById('page-dashboard');
-  if(dashPage&&dashPage.classList.contains('active')) renderDashboard();
-}, 60000);
-
-// ===== SETTINGS DENDA =====
 function previewDenda(val){
   const n=parseInt(val)||0;
   const el=document.getElementById('denda-current');
@@ -3442,13 +3418,43 @@ function saveDenda(){
   if(val<0){showToast('Denda tidak boleh minus');return;}
   DENDA_PER_JAM=val;
   localStorage.setItem('rm_denda_perjam',val);
-  showToast('✅ Denda diperbarui: '+rp(val)+'/jam');
+  showToast('Denda default diperbarui: '+rp(val)+'/jam');
+  renderDashboard();
+}
+function renderDendaPerMotor(){
+  const list=document.getElementById('denda-per-motor-list');
+  if(!list) return;
+  list.innerHTML=stokData.map(m=>{
+    const val=DENDA_PER_MOTOR[m.name]!==undefined?DENDA_PER_MOTOR[m.name]:'';
+    return`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span style="min-width:160px;font-size:13px;font-weight:500">${m.name}</span>
+      <input type="number" min="0" placeholder="${rp(DENDA_PER_JAM)}/jam (default)"
+        value="${val}"
+        data-motor="${m.name}"
+        style="flex:1;min-width:160px;height:36px;border:1px solid var(--border);border-radius:var(--radius);padding:0 10px;font-size:13px;background:var(--bg2);color:var(--text1)">
+      <span style="font-size:12px;color:var(--text3);min-width:80px">${val?rp(val)+'/jam':'pakai default'}</span>
+    </div>`;
+  }).join('');
+}
+function saveDendaPerMotor(){
+  const inputs=document.querySelectorAll('#denda-per-motor-list input[data-motor]');
+  inputs.forEach(inp=>{
+    const motor=inp.dataset.motor;
+    const val=inp.value.trim();
+    if(val==='') delete DENDA_PER_MOTOR[motor];
+    else DENDA_PER_MOTOR[motor]=parseInt(val)||0;
+  });
+  localStorage.setItem('rm_denda_per_motor',JSON.stringify(DENDA_PER_MOTOR));
+  showToast('Denda per motor berhasil disimpan');
+  renderDendaPerMotor();
   renderDashboard();
 }
 function initDendaUI(){
   const el=document.getElementById('setting-denda');
   if(el){ el.value=DENDA_PER_JAM; previewDenda(DENDA_PER_JAM); }
+  renderDendaPerMotor();
 }
+
 // Auto-refresh countdown setiap 1 menit
 setInterval(()=>{
   const dashPage=document.getElementById('page-dashboard');
@@ -3568,14 +3574,14 @@ downloadFiltered = function(){
 
   const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
   XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
-  showToast('✅ Laporan 3 sheet berhasil diunduh!');
+  showToast('Laporan 3 sheet berhasil diunduh!');
 };
 </script>
 
 <!-- MODAL KONFIRMASI SIMPAN -->
 <div class="modal-bg" id="modal-konfirmasi-simpan">
   <div class="modal-box" style="text-align:center;padding:32px 28px">
-    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px">✅</div>
+    <div style="width:52px;height:52px;background:var(--green-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:24px"></div>
     <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:6px">Pesanan Tersimpan!</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:24px" id="konfirmasi-simpan-detail">—</div>
     <div style="display:flex;flex-direction:column;gap:10px">
