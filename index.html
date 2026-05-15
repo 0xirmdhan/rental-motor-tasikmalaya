@@ -774,7 +774,7 @@ body.role-bos .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1630,6 +1630,7 @@ function removeImgKeys(){}
 
 // ===== LOAD DATA FROM SUPABASE =====
 async function loadAllData(){
+  hideOfflineBanner();
   showLoadingOverlay(true);
   try{
     const [rPesanan, rStok, rStokLog, rPeng] = await Promise.all([
@@ -1644,14 +1645,40 @@ async function loadAllData(){
     stokData = (rStok.data||[]).map(r=>({id:r.id,name:r.name,harga:r.harga,total:r.total,avail:r.avail}));
     stokLog = (rStokLog.data||[]).map(r=>({motor:r.motor,perubahan:r.perubahan,oleh:r.oleh,waktu:r.waktu}));
     pengeluaran = (rPeng.data||[]).map(r=>({id:r.id,tgl:r.tgl,kat:r.kat,jumlah:r.jumlah,ket:r.ket,bukti:r.bukti_url,oleh:r.oleh,waktu:r.waktu}));
-    saveAll(); // cache stok lokal
+    saveAll();
   }catch(e){
-    const msg = e?.message || e?.error_description || JSON.stringify(e) || 'Unknown error';
-    const hint = e?.hint || '';
-    console.error('loadAllData full error:', JSON.stringify(e), e);
-    showToast('⚠️ Gagal: '+msg+(hint?' — '+hint:''));
+    const msg = e?.message || e?.error_description || 'Koneksi gagal';
+    console.error('loadAllData error:', JSON.stringify(e), e);
+    showOfflineBanner(msg);
   }finally{
     showLoadingOverlay(false);
+  }
+}
+
+function showOfflineBanner(msg){
+  let el = document.getElementById('offline-banner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'offline-banner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9997;background:#dc2626;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '<span>\u26a0\ufe0f Gagal memuat data: ' + esc(msg) + '</span><button onclick="retryLoad()" style="background:#fff;color:#dc2626;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">\ud83d\udd04 Coba Lagi</button>';
+  el.style.display = 'flex';
+}
+
+function hideOfflineBanner(){
+  const el = document.getElementById('offline-banner');
+  if(el) el.style.display = 'none';
+}
+
+async function retryLoad(){
+  await loadAllData();
+  if(!document.getElementById('offline-banner') || document.getElementById('offline-banner').style.display === 'none'){
+    buildMotorDropdown();
+    renderDashboard();
+    renderPesanan();
+    showToast('\u2705 Data berhasil dimuat!');
   }
 }
 
@@ -1679,6 +1706,16 @@ function esc(str){
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#39;");
 }
+// ===== ISO WEEK HELPER =====
+function isoWeekRange(year, week){
+  var jan4 = new Date(year, 0, 4);
+  var thu = new Date(jan4);
+  thu.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7) + 3 + (week - 1) * 7);
+  var weekStart = new Date(thu); weekStart.setDate(thu.getDate() - 3); weekStart.setHours(0,0,0,0);
+  var weekEnd   = new Date(thu); weekEnd.setDate(thu.getDate() + 3);   weekEnd.setHours(23,59,59,999);
+  return { weekStart: weekStart, weekEnd: weekEnd };
+}
+
 let curEditIdx=null, curStokIdx=null, newAntarVal='tidak', newPayVal='', newKTPData=null, newBuktiData=null, newJenisPenyewa='perorangan';
 
 function setJenisPenyewa(v){
@@ -1686,7 +1723,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2632,7 +2669,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -2795,15 +2832,8 @@ function downloadFiltered(){
     const wk = document.getElementById('lap-minggu').value;
     if(wk){
       const [yr,wn] = wk.split('-W');
-      data = data.filter(p=>{
-        const d = parseWaktu(p);
-        const jan4 = new Date(parseInt(yr),0,4);
-        const weekStart = new Date(jan4);
-        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
-        weekStart.setHours(0,0,0,0);
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
-        return d >= weekStart && d <= weekEnd;
-      });
+      const {weekStart, weekEnd} = isoWeekRange(parseInt(yr), parseInt(wn));
+      data = data.filter(p=>{ const d=parseWaktu(p); return d>=weekStart && d<=weekEnd; });
     }
   } else if(periodType === 'bulanan'){
     const bln = document.getElementById('lap-bulan').value;
@@ -3230,15 +3260,8 @@ downloadFiltered = function(){
     const wk = document.getElementById('lap-minggu').value;
     if(wk){
       const [yr,wn] = wk.split('-W');
-      data = data.filter(p=>{
-        const d = parseWaktu(p);
-        const jan4 = new Date(parseInt(yr),0,4);
-        const weekStart = new Date(jan4);
-        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
-        weekStart.setHours(0,0,0,0);
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
-        return d >= weekStart && d <= weekEnd;
-      });
+      const {weekStart, weekEnd} = isoWeekRange(parseInt(yr), parseInt(wn));
+      data = data.filter(p=>{ const d=parseWaktu(p); return d>=weekStart && d<=weekEnd; });
     }
   } else if(periodType === 'bulanan'){
     const bln = document.getElementById('lap-bulan').value;
