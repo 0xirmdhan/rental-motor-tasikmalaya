@@ -77,7 +77,7 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 .login-logo-text small{display:block;font-size:12px;font-weight:400;color:#6b7280;margin-top:2px}
 .login-title{font-size:24px;font-weight:700;color:#111827;margin-bottom:6px;letter-spacing:-.3px}
 .login-sub{font-size:13px;color:#6b7280;margin-bottom:30px}
-.login-role-selector{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:22px}
+.login-role-selector{display:none}
 .role-btn{padding:10px 8px;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9fafb;cursor:pointer;text-align:center;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif}
 .role-btn:hover{border-color:#2563EB;background:#eff6ff}
 .role-btn.sel{border-color:#2563EB;background:#eff6ff}
@@ -342,7 +342,6 @@ input[type="date"],input[type="month"],input[type="week"]{
 /* ROLE GUARD */
 .admin-only{display:flex!important}
 .pemilik-only{display:flex!important}
-/* No more staff role */
 
 /* PERIOD TABS */
 .period-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:var(--radius);padding:4px;margin-bottom:16px;width:fit-content}
@@ -763,7 +762,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <option value="">Semua Status</option>
           <option>Aktif</option><option>Selesai</option><option>Dibatalkan</option>
         </select>
-        <button class="btn btn-ghost btn-sm" onclick="clearFilter()">Reset</button>
+        
         <button class="btn btn-dark btn-sm" onclick="goPage('input',null)" style="margin-left:auto">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
           Input Pesanan
@@ -960,7 +959,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="form-actions">
           <button class="btn btn-dark" id="btn-simpan-pesanan" onclick="simpanPesanan()">Simpan Pesanan</button>
-          <button class="btn btn-ghost" onclick="resetForm()">Reset</button>
         </div>
       </div>
     </div>
@@ -1143,7 +1141,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </div>
             <div class="lap-filter-row">
               <select id="lap-filter-motor" onchange="renderLaporan()"><option value="">Semua Motor</option></select>
-              <select id="lap-filter-staff" onchange="renderLaporan()"><option value="">Semua Staff</option><option>Admin</option></select>
             </div>
             <button class="btn btn-green-solid" onclick="downloadFiltered()">
               <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
