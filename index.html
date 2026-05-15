@@ -65,6 +65,8 @@ body{font-family:'Inter','Plus Jakarta Sans',sans-serif;background:var(--bg);col
 /* ===== LOGIN PAGE ===== */
 .login-page{display:flex;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#2563EB 100%);align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease;opacity:0;pointer-events:none}
 .login-page.show{opacity:1;pointer-events:all}
+#main-app{display:none}
+#main-app.auth-ready{display:block}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .login-card{background:#fff;border-radius:20px;padding:44px 40px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.35);animation:slideUp .4s ease .1s both}
@@ -562,6 +564,8 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
   </div>
 </div>
 
+<div id="main-app">
+
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- SIDEBAR -->
@@ -775,7 +779,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1168,7 +1172,7 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
               Restore dari Backup
               <input type="file" accept=".json" onchange="restoreData(event)" style="display:none">
             </label>
-            <button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:none;margin-left:auto" onclick="resetSemuaData()">Reset Semua Data</button>
+            <button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:none;margin-left:auto" onclick="showResetModal()">Reset Semua Data</button>
           </div>
 
         </div>
@@ -1516,31 +1520,95 @@ function buildUserFromSession(session){
   };
 }
 
-async function doLogin(){
+// ── Login rate limiting ─────────────────────────────────────────────────────
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_LOCKOUT_MS   = 5 * 60 * 1000; // 5 menit
+let loginAttempts  = 0;
+let loginLockedAt  = null;
+
+function getRemainingLockout() {
+  if (!loginLockedAt) return 0;
+  const elapsed = Date.now() - loginLockedAt;
+  return elapsed < LOGIN_LOCKOUT_MS ? Math.ceil((LOGIN_LOCKOUT_MS - elapsed) / 1000) : 0;
+}
+
+function resetLoginState(btn) {
+  loginAttempts = 0;
+  loginLockedAt = null;
+  btn.textContent = 'Masuk ke Dashboard';
+  btn.disabled = false;
+}
+
+async function doLogin() {
   const email = document.getElementById('login-email').value.trim().toLowerCase();
   const pass  = document.getElementById('login-pass').value;
   const err   = document.getElementById('login-error');
   const btn   = document.querySelector('.login-btn');
 
-  if(!email||!pass){ err.textContent='Email dan password wajib diisi.'; err.classList.add('show'); return; }
+  // Cek lockout aktif
+  const remaining = getRemainingLockout();
+  if (remaining > 0) {
+    const menit = Math.floor(remaining / 60);
+    const detik = remaining % 60;
+    err.textContent = `Terlalu banyak percobaan. Coba lagi dalam ${menit > 0 ? menit+'m ' : ''}${detik}d.`;
+    err.classList.add('show');
+    return;
+  }
 
-  btn.textContent = 'Masuk...'; btn.disabled = true;
+  if (!email || !pass) {
+    err.textContent = 'Email dan password wajib diisi.';
+    err.classList.add('show');
+    return;
+  }
+
+  btn.textContent = 'Masuk...';
+  btn.disabled = true;
   err.classList.remove('show');
 
-  try{
-    const {data, error} = await sb.auth.signInWithPassword({email, password:pass});
-    if(error) throw error;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+
+    // Login berhasil — reset counter
+    resetLoginState(btn);
     currentUser = buildUserFromSession(data.session);
     document.getElementById('login-page').classList.remove('show');
+    document.getElementById('main-app').classList.add('auth-ready');
     applyUserUI();
     await loadAllData();
+    buildMotorDropdown();
     renderPesanan();
-    showToast('Selamat datang, '+currentUser.name+'!');
-  }catch(e){
-    err.textContent = 'Email atau password salah. Coba lagi.';
+    renderDashboard();
+    showToast('Selamat datang, ' + currentUser.name + '!');
+
+  } catch (e) {
+    loginAttempts++;
+    const sisa = LOGIN_MAX_ATTEMPTS - loginAttempts;
+
+    if (loginAttempts >= LOGIN_MAX_ATTEMPTS) {
+      loginLockedAt = Date.now();
+      loginAttempts = 0;
+      err.textContent = 'Akun dikunci 5 menit karena terlalu banyak percobaan.';
+
+      // Countdown di tombol
+      let countdown = LOGIN_LOCKOUT_MS / 1000;
+      const interval = setInterval(() => {
+        countdown--;
+        const m = Math.floor(countdown / 60);
+        const s = countdown % 60;
+        btn.textContent = `Tunggu ${m > 0 ? m+'m ' : ''}${s}d...`;
+        if (countdown <= 0) {
+          clearInterval(interval);
+          resetLoginState(btn);
+          err.classList.remove('show');
+        }
+      }, 1000);
+    } else {
+      err.textContent = `Email atau password salah. Sisa percobaan: ${sisa}.`;
+      btn.textContent = 'Masuk ke Dashboard';
+      btn.disabled = false;
+    }
     err.classList.add('show');
-  }finally{
-    btn.textContent = 'Masuk ke Dashboard'; btn.disabled = false;
   }
 }
 
@@ -1584,14 +1652,21 @@ applyDark();
   if(data && data.session){
     currentUser = buildUserFromSession(data.session);
     document.getElementById('login-page').classList.remove('show');
+    document.getElementById('main-app').classList.add('auth-ready');
     applyUserUI();
     await loadAllData();
+    buildMotorDropdown();
     renderPesanan();
+    renderDashboard();
+  } else {
+    // Tidak ada session — pastikan login page tampil
+    document.getElementById('login-page').classList.add('show');
   }
   // Listen perubahan auth state (logout dari tab lain, expired, dll)
   sb.auth.onAuthStateChange((event, session)=>{
     if(event === 'SIGNED_OUT'){
       currentUser = null;
+      document.getElementById('main-app').classList.remove('auth-ready');
       document.getElementById('login-page').classList.add('show');
     }
   });
@@ -1807,11 +1882,11 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
-function formatWaktu(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function formatWaktu(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});}
 function parseWaktu(p){if(p.mulai)return new Date(p.mulai);if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d;}return new Date();}
 function statusPill(s){const m={Aktif:'pill-blue',Selesai:'pill-green',Dibatalkan:'pill-red'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
 function payPill(s){const m={'Transfer Bank':'pill-blue','QRIS':'pill-amber','Tunai':'pill-green'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
@@ -2072,7 +2147,7 @@ function openStruk(idx){
     <div class="struk-row"><span class="struk-label">Harga Sewa</span><span class="struk-val">${rp(p.total)}</span></div>
     ${denda>0?`<div class="struk-denda-row"><span>⚠️ Denda Keterlambatan (${terlambatHari} hari × ${rp(DENDA_PER_HARI)})</span><span>${rp(denda)}</span></div>`:''}
     <div class="struk-total-row"><span>TOTAL TAGIHAN</span><span class="struk-val">${rp(totalBayar)}</span></div>
-    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID')}<br>Terima kasih telah menggunakan layanan kami 🙏</div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--text3)">Dicetak: ${new Date().toLocaleString('id-ID',{hour12:false})}<br>Terima kasih telah menggunakan layanan kami 🙏</div>
   `;
   document.getElementById('modal-struk').classList.add('show');
 }
@@ -2640,7 +2715,7 @@ async function simpanMotorBaru(){
   if(!valid){showToast('Periksa kembali — ada field yang belum diisi');return;}
   if(stokData.some(s=>s.name.toLowerCase()===nama.toLowerCase())){showToast('Motor dengan nama ini sudah ada!');return;}
   const newId = 'motor_'+Date.now();
-  const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
+  const logEntry = {motor:nama,perubahan:`Motor baru ditambahkan — Total: ${total} unit, Harga: ${rp(harga)}/hari`,oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID',{hour12:false})};
   stokData.push({id:newId,name:nama,harga,total,avail:total});
   stokLog.unshift(logEntry);
   saveAll();
@@ -2662,7 +2737,7 @@ function openHapusMotor(i){
 async function konfirmasiHapusMotor(){
   if(hapusMotorIdx===null)return;
   const s=stokData[hapusMotorIdx];
-  const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID')};
+  const logEntry = {motor:s.name,perubahan:'Motor dihapus dari daftar',oleh:currentUser?currentUser.name:'Admin',waktu:new Date().toLocaleString('id-ID',{hour12:false})};
   const motorId = s.id;
   stokLog.unshift(logEntry);
   stokData.splice(hapusMotorIdx,1);
@@ -2680,7 +2755,7 @@ function openEditStok(idx){
 async function saveStok(){
   const newTotal=parseInt(document.getElementById('mod-stok-total').value)||0;const newAvail=parseInt(document.getElementById('mod-stok-avail').value)||0;
   const old=stokData[curStokIdx];const oleh=currentUser?currentUser.name:'Admin';
-  const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID')};
+  const logEntry = {motor:old.name,perubahan:`Total: ${old.total}→${newTotal}, Tersedia: ${old.avail}→${newAvail}`,oleh,waktu:new Date().toLocaleString('id-ID',{hour12:false})};
   stokLog.unshift(logEntry);
   stokData[curStokIdx].total=newTotal;stokData[curStokIdx].avail=Math.min(newAvail,newTotal);
   saveAll();
@@ -2822,7 +2897,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -2897,7 +2972,7 @@ function addLaporanHeader(ws, numCols){
   XLSX.utils.sheet_add_aoa(ws, [
     ['LAPORAN PENJUALAN'],
     ['RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya'],
-    ['Dicetak: '+new Date().toLocaleString('id-ID')],
+    ['Dicetak: '+new Date().toLocaleString('id-ID',{hour12:false})],
     []
   ], {origin:'A1'});
   if(!ws['!merges'])ws['!merges']=[];
@@ -2911,7 +2986,7 @@ function addLaporanHeader(ws, numCols){
   // Row 2: subtitle — no bg, centered, medium
   ws['A2']={v:'RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya',t:'s',s:{font:{sz:11,color:{rgb:'374151'}},alignment:{horizontal:'center'}}};
   // Row 3: date — no bg, centered, small gray
-  ws['A3']={v:'Dicetak: '+new Date().toLocaleString('id-ID'),t:'s',s:{font:{sz:10,color:{rgb:'6B7280'}},alignment:{horizontal:'center'}}};
+  ws['A3']={v:'Dicetak: '+new Date().toLocaleString('id-ID',{hour12:false}),t:'s',s:{font:{sz:10,color:{rgb:'6B7280'}},alignment:{horizontal:'center'}}};
   ws['!rows']=[{hpt:30},{hpt:18},{hpt:15},{hpt:4}];
 }
 function applyHeaderStyle(ws, headerRow, numCols){
@@ -3020,7 +3095,9 @@ function downloadFiltered(){
 
 // ===== BACKUP & RESTORE =====
 function backupData(){
-  const payload={pesanan,stokData,stokLog,exportedAt:new Date().toISOString(),version:'v6'};
+  if(!currentUser){ showToast('Login diperlukan untuk backup data'); return; }
+  if(!confirm('Download backup semua data rental?\n\nFile akan berisi seluruh data pesanan, stok, dan pengeluaran.')) return;
+  const payload={pesanan,stokData,stokLog,pengeluaran,exportedAt:new Date().toISOString(),version:'v6',exportedBy:currentUser.name};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
 }
@@ -3051,9 +3128,19 @@ async function restoreData(e){
   };
   reader.readAsText(file);e.target.value='';
 }
-async function resetSemuaData(){
-  if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
-  if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
+function showResetModal(){
+  if(!currentUser){ showToast('Login diperlukan'); return; }
+  document.getElementById('reset-konfirmasi-input').value='';
+  document.getElementById('btn-konfirmasi-reset').disabled=true;
+  document.getElementById('modal-reset-konfirmasi').style.display='flex';
+}
+function tutupResetModal(){
+  document.getElementById('modal-reset-konfirmasi').style.display='none';
+  document.getElementById('reset-konfirmasi-input').value='';
+}
+async function eksekusiReset(){
+  if(document.getElementById('reset-konfirmasi-input').value!=='RESET') return;
+  tutupResetModal();
   pesanan=[];stokLog=[];pengeluaran=[];
   stokData=[
     {id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},
@@ -3063,7 +3150,6 @@ async function resetSemuaData(){
     {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}
   ];
   saveAll();
-  // Reset Supabase tables
   if(sb){
     try{
       await sb.from('pesanan').delete().neq('id',0);
@@ -3427,8 +3513,7 @@ setInterval(()=>{
 }, 60000);
 
 // ===== INIT =====
-buildMotorDropdown();
-renderDashboard();
+// buildMotorDropdown() dan renderDashboard() dipanggil di dalam auth check
 
 
 // ===== PATCH v21: Sheet Laporan Operasional Gabungan =====
@@ -3527,7 +3612,7 @@ downloadFiltered = function(){
   const wsOp = XLSX.utils.json_to_sheet([]);
   XLSX.utils.sheet_add_aoa(wsOp, [
     ['LAPORAN OPERASIONAL — Rental Motor Tasikmalaya'],
-    ['Digenerate: '+new Date().toLocaleString('id-ID')],
+    ['Digenerate: '+new Date().toLocaleString('id-ID',{hour12:false})],
     [''],
   ]);
   XLSX.utils.sheet_add_json(wsOp, buildRowsOperasional(data), {origin:{r:3,c:0}});
@@ -3564,6 +3649,42 @@ downloadFiltered = function(){
     </div>
   </div>
 </div>
+
+<!-- MODAL RESET KONFIRMASI -->
+<div id="modal-reset-konfirmasi" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:420px;margin:16px;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" style="width:22px;height:22px;stroke:#dc2626;fill:none;stroke-width:2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:16px;color:#111">Reset Semua Data</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:2px">Tindakan ini tidak bisa dibatalkan</div>
+      </div>
+    </div>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:13px;color:#b91c1c;margin-bottom:20px;line-height:1.6">
+      ⚠️ Semua data pesanan, pengeluaran, dan log stok akan <strong>dihapus permanen</strong> dari database. Pastikan sudah melakukan backup terlebih dahulu.
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px">Ketik <strong>RESET</strong> untuk konfirmasi</label>
+      <input id="reset-konfirmasi-input" type="text" placeholder="Ketik RESET di sini..." 
+        style="width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;box-sizing:border-box"
+        oninput="document.getElementById('btn-konfirmasi-reset').disabled=this.value!=='RESET'"
+        onkeydown="if(event.key==='Enter'&&this.value==='RESET')eksekusiReset()">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="tutupResetModal()" style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#374151">Batal</button>
+      <button id="btn-konfirmasi-reset" onclick="eksekusiReset()" disabled
+        style="flex:1;padding:11px;border:none;border-radius:10px;background:#dc2626;color:#fff;font-size:14px;font-weight:600;cursor:pointer;opacity:0.4;transition:opacity .15s"
+        onmouseenter="if(!this.disabled)this.style.background='#b91c1c'"
+        onmouseleave="this.style.background='#dc2626'">
+        Ya, Reset Sekarang
+      </button>
+    </div>
+  </div>
+</div>
+<style>#btn-konfirmasi-reset:not([disabled]){opacity:1!important}</style>
+</div><!-- /#main-app -->
 </body>
 </html>
 </script>
