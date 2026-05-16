@@ -1062,16 +1062,30 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="period-tab" id="ptab-bulan" onclick="setPeriod('bulan',this)">Bulan Ini</button>
         <button class="period-tab" id="ptab-semua" onclick="setPeriod('semua',this)">Semua</button>
       </div>
-      <div class="rekap-period-row">
+      <!-- Baris 1: Pendapatan, Pengeluaran, Laba Bersih (per periode) -->
+      <div class="rekap-period-row" style="grid-template-columns:repeat(3,1fr)">
         <div class="rekap-mini">
           <div class="rekap-mini-label">Pendapatan</div>
-          <div class="rekap-mini-val" id="rek-period-pend">Rp 0</div>
+          <div class="rekap-mini-val" id="rek-period-pend" style="color:var(--green)">Rp 0</div>
           <div class="rekap-mini-sub" id="rek-period-pend-sub">0 transaksi</div>
         </div>
         <div class="rekap-mini">
+          <div class="rekap-mini-label">Pengeluaran</div>
+          <div class="rekap-mini-val" id="rek-period-peng" style="color:var(--red)">Rp 0</div>
+          <div class="rekap-mini-sub" id="rek-period-peng-sub">periode ini</div>
+        </div>
+        <div class="rekap-mini" id="rek-period-laba-card">
+          <div class="rekap-mini-label">Laba Bersih</div>
+          <div class="rekap-mini-val" id="rek-period-laba">Rp 0</div>
+          <div class="rekap-mini-sub" id="rek-period-label">periode ini</div>
+        </div>
+      </div>
+      <!-- Baris 2: Transaksi + Rata-rata -->
+      <div class="rekap-period-row" style="grid-template-columns:1fr 1fr;margin-top:-4px">
+        <div class="rekap-mini">
           <div class="rekap-mini-label">Transaksi</div>
           <div class="rekap-mini-val" id="rek-period-cnt">0</div>
-          <div class="rekap-mini-sub" id="rek-period-label">periode ini</div>
+          <div class="rekap-mini-sub">jumlah pesanan</div>
         </div>
         <div class="rekap-mini">
           <div class="rekap-mini-label">Rata-rata per Transaksi</div>
@@ -1079,16 +1093,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="rekap-mini-sub">rata-rata nilai sewa</div>
         </div>
       </div>
+      <!-- Baris 3: Total semua + Laba bersih total -->
       <div class="rekap-row">
         <div class="rekap-card">
           <div class="rekap-label">Total Pendapatan (Semua)</div>
-          <div class="rekap-val" id="rek-total">Rp 0</div>
+          <div class="rekap-val" id="rek-total" style="color:var(--green)">Rp 0</div>
           <div class="rekap-sub" id="rek-total-sub">Dari 0 transaksi</div>
         </div>
         <div class="rekap-card">
-          <div class="rekap-label">Bulan Ini</div>
-          <div class="rekap-val" id="rek-bulan">Rp 0</div>
-          <div class="rekap-sub" id="rek-bulan-sub">0 transaksi bulan ini</div>
+          <div class="rekap-label">Laba Bersih (Semua)</div>
+          <div class="rekap-val" id="rek-laba-total">Rp 0</div>
+          <div class="rekap-sub" id="rek-laba-total-sub">Pendapatan − Pengeluaran</div>
         </div>
       </div>
       <div class="card" style="margin-bottom:16px">
@@ -1477,7 +1492,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
-        Jl. Lengkong Tengah, Tawangsari,<br>
+        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
         Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
@@ -2128,7 +2143,7 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
-      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Lengkong Tengah, Tawangsari,</div>
+      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
       <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
@@ -2625,11 +2640,52 @@ function renderKeuangan(){
   const periodPend = periodData.reduce((a,b)=>a+(b.total||0),0);
   const periodCnt = periodData.length;
   const periodLabels = {hari:'hari ini', minggu:'minggu ini', bulan:'bulan ini', semua:'semua data'};
+
+  // Hitung pengeluaran per periode
+  const periodPeng = (()=>{
+    const now2=new Date();
+    if(currentPeriod==='semua') return pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
+    return pengeluaran.filter(p=>{
+      const d=new Date(p.tgl||p.waktu);
+      if(isNaN(d)) return false;
+      if(currentPeriod==='hari') return d.toDateString()===now2.toDateString();
+      if(currentPeriod==='minggu'){
+        const startOfWeek=new Date(now2);
+        startOfWeek.setDate(now2.getDate()-now2.getDay()+(now2.getDay()===0?-6:1));
+        startOfWeek.setHours(0,0,0,0);
+        const endOfWeek=new Date(startOfWeek);endOfWeek.setDate(startOfWeek.getDate()+6);endOfWeek.setHours(23,59,59,999);
+        return d>=startOfWeek&&d<=endOfWeek;
+      }
+      return d.getMonth()===now2.getMonth()&&d.getFullYear()===now2.getFullYear();
+    }).reduce((a,b)=>a+(b.jumlah||0),0);
+  })();
+
+  const periodLaba = periodPend - periodPeng;
+  const labaCard = document.getElementById('rek-period-laba-card');
+  const labaEl = document.getElementById('rek-period-laba');
+  labaEl.textContent = rp(Math.abs(periodLaba));
+  labaEl.style.color = periodLaba >= 0 ? 'var(--blue)' : 'var(--red)';
+  if(labaCard) labaCard.style.borderColor = periodLaba >= 0 ? '' : 'var(--red)';
+
   document.getElementById('rek-period-pend').textContent = rp(periodPend);
   document.getElementById('rek-period-pend-sub').textContent = periodCnt+' transaksi';
+  document.getElementById('rek-period-peng').textContent = rp(periodPeng);
+  document.getElementById('rek-period-peng-sub').textContent = periodLabels[currentPeriod];
   document.getElementById('rek-period-cnt').textContent = periodCnt;
   document.getElementById('rek-period-label').textContent = periodLabels[currentPeriod];
   document.getElementById('rek-period-avg').textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';
+
+  // Laba bersih total (semua waktu)
+  const totalPend = valid.reduce((a,b)=>a+(b.total||0),0);
+  const totalPeng = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
+  const labaBersihTotal = totalPend - totalPeng;
+  const labaEl2 = document.getElementById('rek-laba-total');
+  if(labaEl2){
+    labaEl2.textContent = rp(Math.abs(labaBersihTotal));
+    labaEl2.style.color = labaBersihTotal >= 0 ? 'var(--blue)' : 'var(--red)';
+  }
+  const labaSub = document.getElementById('rek-laba-total-sub');
+  if(labaSub) labaSub.textContent = (labaBersihTotal>=0?'Untung ':'Rugi ')+rp(Math.abs(labaBersihTotal));
 
   const motorStats={};
   stokData.forEach(m=>{motorStats[m.name]={tot:0,cnt:0};});
