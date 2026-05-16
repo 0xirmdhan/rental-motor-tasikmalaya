@@ -2739,10 +2739,10 @@ function renderKeuangan(){
   const now=new Date();
   const valid=pesanan.filter(p=>p.status!=='Dibatalkan');
   const bulanIni=valid.filter(p=>{const d=parseWaktu(p);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  document.getElementById('rek-total').textContent=rp(valid.reduce((a,b)=>a+(b.total||0),0));
-  document.getElementById('rek-total-sub').textContent='Dari '+valid.length+' transaksi';
-  document.getElementById('rek-bulan').textContent=rp(bulanIni.reduce((a,b)=>a+(b.total||0),0));
-  document.getElementById('rek-bulan-sub').textContent=bulanIni.length+' transaksi bulan ini';
+  const elTotal=document.getElementById('rek-total'); if(elTotal) elTotal.textContent=rp(valid.reduce((a,b)=>a+(b.total||0),0));
+  const elTotalSub=document.getElementById('rek-total-sub'); if(elTotalSub) elTotalSub.textContent='Dari '+valid.length+' transaksi';
+  const elBulan=document.getElementById('rek-bulan'); if(elBulan) elBulan.textContent=rp(bulanIni.reduce((a,b)=>a+(b.total||0),0));
+  const elBulanSub=document.getElementById('rek-bulan-sub'); if(elBulanSub) elBulanSub.textContent=bulanIni.length+' transaksi bulan ini';
 
   // Period stats
   const periodData = getPeriodData();
@@ -2786,13 +2786,13 @@ function renderKeuangan(){
   labaEl.style.color = periodLaba >= 0 ? 'var(--blue)' : 'var(--red)';
   if(labaCard) labaCard.style.borderColor = periodLaba >= 0 ? '' : 'var(--red)';
 
-  document.getElementById('rek-period-pend').textContent = rp(periodPend);
-  document.getElementById('rek-period-pend-sub').textContent = periodCnt+' transaksi';
-  document.getElementById('rek-period-peng').textContent = rp(periodPeng);
-  document.getElementById('rek-period-peng-sub').textContent = periodLabels[_dashPeriod]||_dashPeriod;
-  document.getElementById('rek-period-cnt').textContent = periodCnt;
-  document.getElementById('rek-period-label').textContent = periodLabels[_dashPeriod]||_dashPeriod;
-  document.getElementById('rek-period-avg').textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';
+  const _el_rek_period_pend=document.getElementById('rek-period-pend');if(_el_rek_period_pend){_el_rek_period_pend.textContent = rp(periodPend);}
+  const _el_rek_period_pend_sub=document.getElementById('rek-period-pend-sub');if(_el_rek_period_pend_sub){_el_rek_period_pend_sub.textContent = periodCnt+' transaksi';}
+  const _el_rek_period_peng=document.getElementById('rek-period-peng');if(_el_rek_period_peng){_el_rek_period_peng.textContent = rp(periodPeng);}
+  const _el_rek_period_peng_sub=document.getElementById('rek-period-peng-sub');if(_el_rek_period_peng_sub){_el_rek_period_peng_sub.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
+  const _el_rek_period_cnt=document.getElementById('rek-period-cnt');if(_el_rek_period_cnt){_el_rek_period_cnt.textContent = periodCnt;}
+  const _el_rek_period_label=document.getElementById('rek-period-label');if(_el_rek_period_label){_el_rek_period_label.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
+  const _el_rek_period_avg=document.getElementById('rek-period-avg');if(_el_rek_period_avg){_el_rek_period_avg.textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';}
 
   // Laba bersih total (semua waktu)
   const totalPend = valid.reduce((a,b)=>a+(b.total||0),0);
