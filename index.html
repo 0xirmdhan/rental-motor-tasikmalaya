@@ -2771,12 +2771,13 @@ function renderKeuangan(){
   const labaSub = document.getElementById('rek-laba-total-sub');
   if(labaSub) labaSub.textContent = (labaBersihTotal>=0?'Untung ':'Rugi ')+rp(Math.abs(labaBersihTotal));
 
+  // Bar chart & tabel ikut filter period
   const motorStats={};
   stokData.forEach(m=>{motorStats[m.name]={tot:0,cnt:0};});
-  valid.forEach(p=>{if(motorStats[p.motor]){motorStats[p.motor].tot+=p.total||0;motorStats[p.motor].cnt++;}});
+  periodData.forEach(p=>{if(motorStats[p.motor]){motorStats[p.motor].tot+=p.total||0;motorStats[p.motor].cnt++;}});
   const maxVal=Math.max(...Object.values(motorStats).map(s=>s.tot),1);
   document.getElementById('keu-per-motor').innerHTML=stokData.map(m=>{const st=motorStats[m.name]||{tot:0,cnt:0};const pct=Math.round((st.tot/maxVal)*100);return`<div class="bar-item"><div class="bar-meta"><span class="bar-label">${m.name}</span><span class="bar-val">${rp(st.tot)} · ${st.cnt}x</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div></div>`;}).join('');
-  let data=valid;
+  let data=periodData;
   if(fm)data=data.filter(p=>p.motor===fm);
   if(fp)data=data.filter(p=>p.payment===fp);
   const tb=document.getElementById('tbl-keuangan');
