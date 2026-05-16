@@ -2136,23 +2136,36 @@ function cetakStruk(){
   `;
   const content = headerHtml + document.getElementById('struk-content').innerHTML;
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Struk Rental Motor Tasikmalaya</title>
     <style>
-      @page{margin:0;size:A5}
+      @page{margin:16mm;size:A5}
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:'Segoe UI',Arial,sans-serif;padding:28px 32px;background:#fff;color:#111827;font-size:13px}
-      table{width:100%;border-collapse:collapse}
-      td{padding:7px 0;border-bottom:1px solid #e5e7eb;vertical-align:top}
-      td:last-child{text-align:right;font-weight:600}
-      .total-row td{font-size:15px;font-weight:700;border-top:2px solid #111827;border-bottom:none;padding-top:12px;color:#2563eb}
-      .footer-note{text-align:center;font-size:10px;color:#6b7280;margin-top:18px}
+      body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111827;font-size:13px;max-width:480px;margin:0 auto;padding:24px 20px}
+      /* Struk rows — sama persis dengan tampilan di dashboard */
+      .struk-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px dashed #e2e8f0;font-size:13px;gap:12px}
+      .struk-row:last-of-type{border-bottom:none}
+      .struk-label{color:#475569;flex-shrink:0}
+      .struk-val{font-weight:600;color:#0f172a;text-align:right;max-width:60%;word-break:break-word}
+      .struk-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;margin-top:8px;border-top:2px solid #e2e8f0;font-size:15px;font-weight:700}
+      .struk-total-row .struk-val{color:#2563EB;font-size:17px}
+      .struk-denda-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:#dc2626}
+      .struk-body{margin-top:0}
+      /* Header */
+      .struk-header{text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px}
+      /* Footer */
+      .struk-footer{text-align:center;margin-top:16px;font-size:11px;color:#6b7280}
+      /* Tombol kembali — hanya tampil di layar, tidak di print */
       .back-btn{position:fixed;top:12px;left:12px;padding:8px 16px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999}
+      @media print{
+        .back-btn{display:none}
+        body{padding:0;max-width:100%}
+      }
     </style>
   </head><body>
   <button class="back-btn" onclick="window.history.back()">← Kembali</button>
   ${content}
   <script>
-    // Auto print hanya di desktop, di iOS cukup tampilkan
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     if(!isIOS){ window.onload=function(){ window.print(); }; }
   <\/script>
