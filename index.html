@@ -1143,8 +1143,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="card-body">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>#</th><th>Nama</th><th>Motor</th><th>Durasi</th><th>Total</th><th>Metode</th><th>Tanggal</th></tr></thead>
+              <thead><tr><th>#</th><th>Nama</th><th>Motor</th><th>Durasi</th><th>Total Sewa</th><th>Denda</th><th>Metode</th><th>Tanggal</th></tr></thead>
               <tbody id="tbl-keuangan"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- RIWAYAT DENDA -->
+      <div class="card" style="margin-top:16px">
+        <div class="card-header">
+          <div class="card-title">Riwayat Denda Keterlambatan</div>
+          <div style="font-size:12px;color:var(--text2)" id="riwayat-denda-count">0 entri</div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table class="riwayat-denda-table">
+              <thead><tr><th>#</th><th>Nama</th><th>Motor</th><th>Keterlambatan</th><th>Denda</th><th>Catatan</th><th>Tanggal</th></tr></thead>
+              <tbody id="tbl-riwayat-denda"></tbody>
             </table>
           </div>
         </div>
@@ -1654,6 +1671,7 @@ let pesanan = [];
 let stokData = [];
 let stokLog = [];
 let pengeluaran = [];
+let riwayatDenda = []; // {id, pesananId, nama, motor, jamTerlambat, denda, catatan, waktu}
 const DENDA_PER_HARI = 50000; // tidak dipakai lagi
 let DENDA_PER_JAM = parseInt(localStorage.getItem('rm_denda_perjam')||'10000');
 
@@ -1803,6 +1821,12 @@ async function loadAllData(){
       pesanan     = resPesanan.data  || [];
       stokLog     = resStokLog.data  || [];
       pengeluaran = resPeng.data     || [];
+      // Load riwayat denda dari supabase jika tabel ada
+      try{
+        const resDenda = await sb.from('riwayat_denda').select('*').order('waktu',{ascending:false});
+        if(resDenda.data && resDenda.data.length) riwayatDenda = resDenda.data;
+        else { const sd=localStorage.getItem('rm_riwayat_denda'); riwayatDenda=sd?JSON.parse(sd):[]; }
+      }catch(e){ const sd=localStorage.getItem('rm_riwayat_denda'); riwayatDenda=sd?JSON.parse(sd):[]; }
 
       if(resStok.error || !resStok.data || !resStok.data.length){
         // Fallback: init default stok if table empty
@@ -1842,6 +1866,8 @@ function _loadFromLocalStorage(){
     const savedStokLog = localStorage.getItem('rm_stok_log');
     const savedPeng    = localStorage.getItem('rm_pengeluaran');
     pesanan     = savedPesanan  ? JSON.parse(savedPesanan)  : [];
+        const savedDenda = localStorage.getItem('rm_riwayat_denda');
+        riwayatDenda = savedDenda ? JSON.parse(savedDenda) : [];
     stokLog     = savedStokLog  ? JSON.parse(savedStokLog)  : [];
     pengeluaran = savedPeng     ? JSON.parse(savedPeng)     : [];
     if(savedStok){
@@ -2191,6 +2217,14 @@ function renderPesanan(){
   tb.innerHTML=data.map((p)=>{
     const origIdx=pesanan.indexOf(p);
     const denda=hitungDenda(p);
+    const jamTerlambat=getJamTerlambat(p);
+    const sisaWaktu=getSisaWaktu(p);
+    let statusDisplay=statusPill(p.status);
+    if(p.status==='Aktif'&&denda>0){
+      statusDisplay=`<span class="pill-terlambat">Terlambat ${jamTerlambat}j · ${rp(denda)}</span>`;
+    } else if(p.status==='Aktif'&&sisaWaktu){
+      statusDisplay=statusPill(p.status)+` <span style="font-size:10px;color:var(--text3)">${sisaWaktu}</span>`;
+    }
     return`<tr>
       <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${origIdx+1}</td>
       <td><strong>${p.nama}</strong></td>
@@ -2203,10 +2237,12 @@ function renderPesanan(){
       <td>${p.dp>0?`<span style="font-family:'JetBrains Mono',monospace;font-size:12px">${rp(p.dp)}</span>`:lunasPill(p)}</td>
       <td style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red)">${p.dp>0&&p.dp<p.total?rp(p.sisaBayar||Math.max(0,p.total-p.dp)):'<span style="color:var(--text3)">—</span>'}</td>
       <td>${payPill(p.payment)}</td>
-      <td>${statusPill(p.status)}</td>
+      <td>${statusDisplay}</td>
       <td style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="openStruk(${origIdx})">Struk</button>
-        <button class="btn btn-ghost btn-sm" onclick="openEditPesanan(${origIdx})">Edit</button>
+        ${p.status==='Aktif'&&denda>0
+          ? `<button class="btn btn-sm" style="background:var(--green-soft);color:var(--green);border:none;font-weight:600" onclick="openModalDenda(${origIdx})">Selesaikan</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="openEditPesanan(${origIdx})">Edit</button>`}
         <button class="btn btn-sm btn-hapus-pesanan" style="background:var(--red-soft);color:var(--red);border:none" onclick="hapusPesanan(${origIdx})">Hapus</button>
       </td>
     </tr>`;
@@ -2718,6 +2754,104 @@ function setPeriod(p, btn){
 function getPeriodData(){
   return getFilteredByPeriod();
 }
+
+// ===== SISTEM DENDA =====
+let _dendaEditIdx = -1;
+
+function openModalDenda(idx){
+  _dendaEditIdx = idx;
+  const p = pesanan[idx];
+  const denda = hitungDenda(p);
+  const jamTerlambat = getJamTerlambat(p);
+  document.getElementById('denda-modal-sub').textContent = p.nama + ' · ' + p.motor;
+  document.getElementById('denda-modal-total').textContent = rp(p.total);
+  document.getElementById('denda-modal-jam').textContent = jamTerlambat + ' jam';
+  const inp = document.getElementById('denda-modal-input');
+  inp.value = denda;
+  inp.oninput = updateDendaTagihan;
+  document.getElementById('denda-modal-catatan').value = '';
+  updateDendaTagihan();
+  document.getElementById('modal-denda').classList.add('show');
+}
+
+function updateDendaTagihan(){
+  const p = pesanan[_dendaEditIdx];
+  const dendaVal = parseInt(document.getElementById('denda-modal-input').value)||0;
+  document.getElementById('denda-modal-tagihan').textContent = rp(p.total + dendaVal);
+}
+
+function tutupModalDenda(){
+  document.getElementById('modal-denda').classList.remove('show');
+  _dendaEditIdx = -1;
+}
+
+async function konfirmasiSelesaiDenda(){
+  if(_dendaEditIdx < 0) return;
+  const p = pesanan[_dendaEditIdx];
+  const dendaVal = parseInt(document.getElementById('denda-modal-input').value)||0;
+  const catatanDenda = document.getElementById('denda-modal-catatan').value.trim();
+  const jamTerlambat = getJamTerlambat(p);
+
+  // Simpan ke riwayat denda
+  if(dendaVal > 0){
+    const entryDenda = {
+      id: Date.now(),
+      pesananId: p.id,
+      nama: p.nama,
+      motor: p.motor,
+      jamTerlambat,
+      denda: dendaVal,
+      catatan: catatanDenda,
+      waktu: new Date().toISOString()
+    };
+    riwayatDenda.unshift(entryDenda);
+    // Simpan ke Supabase jika tersedia
+    if(sb){
+      try{ await sb.from('riwayat_denda').insert([entryDenda]); }catch(e){ console.warn('riwayat_denda belum ada di Supabase, tersimpan lokal'); }
+    }
+    localStorage.setItem('rm_riwayat_denda', JSON.stringify(riwayatDenda));
+  }
+
+  // Update status pesanan jadi Selesai, simpan denda di field p.dendaDibayar
+  const si = stokData.findIndex(s=>s.name===p.motor);
+  if(si>=0) stokData[si].avail = Math.min(stokData[si].avail+1, stokData[si].total);
+  pesanan[_dendaEditIdx] = {...p, status:'Selesai', dendaDibayar: dendaVal, waktuSelesai: new Date().toISOString()};
+  saveAll();
+  await sbUpsertPesanan(pesanan[_dendaEditIdx]);
+  if(si>=0) await sbUpsertStok(stokData[si]);
+
+  tutupModalDenda();
+  renderPesanan();
+  renderDashboard();
+  if(document.getElementById('page-keuangan').classList.contains('active')) renderKeuangan();
+  showToast(dendaVal>0 ? 'Pesanan selesai · Denda '+rp(dendaVal)+' dicatat' : 'Pesanan selesai');
+}
+
+function renderRiwayatDenda(){
+  const tbody = document.getElementById('tbl-riwayat-denda');
+  const countEl = document.getElementById('riwayat-denda-count');
+  if(!tbody) return;
+  // Filter sesuai periode aktif
+  const periodData = getFilteredByPeriod();
+  const idxSet = new Set(periodData.map(p=>p.id));
+  const filtered = riwayatDenda.filter(d => idxSet.has(d.pesananId));
+  if(countEl) countEl.textContent = filtered.length + ' entri';
+  if(!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-text">Belum ada riwayat denda</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map((d,i)=>`
+    <tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td><strong>${d.nama}</strong></td>
+      <td>${d.motor}</td>
+      <td style="color:var(--red);font-family:'JetBrains Mono',monospace;font-size:12px">${d.jamTerlambat} jam</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--red)">${rp(d.denda)}</td>
+      <td style="font-size:12px;color:var(--text2)">${d.catatan||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${formatWaktu(d.waktu)}</td>
+    </tr>`).join('');
+}
+
 function renderKeuangan(){
   const fm=document.getElementById('keu-filter-motor').value;
   const fp=document.getElementById('keu-filter-pay').value;
@@ -2729,7 +2863,9 @@ function renderKeuangan(){
 
   // Period stats
   const periodData = getPeriodData();
-  const periodPend = periodData.reduce((a,b)=>a+(b.total||0),0);
+  const periodPend = periodData.reduce((a,b)=>a+(b.total||0)+(b.dendaDibayar||0),0);
+  const periodPendSewa = periodData.reduce((a,b)=>a+(b.total||0),0);
+  const periodPendDenda = periodData.reduce((a,b)=>a+(b.dendaDibayar||0),0);
   const periodCnt = periodData.length;
   const periodLabels = {hari:'hari ini', minggu:'minggu ini', bulan:'bulan ini', semua:'semua data'};
 
@@ -2770,7 +2906,11 @@ function renderKeuangan(){
   if(labaCard) labaCard.style.borderColor = periodLaba >= 0 ? '' : 'var(--red)';
 
   const _el_rek_period_pend=document.getElementById('rek-period-pend');if(_el_rek_period_pend){_el_rek_period_pend.textContent = rp(periodPend);}
-  const _el_rek_period_pend_sub=document.getElementById('rek-period-pend-sub');if(_el_rek_period_pend_sub){_el_rek_period_pend_sub.textContent = periodCnt+' transaksi';}
+  const _el_rek_period_pend_sub=document.getElementById('rek-period-pend-sub');if(_el_rek_period_pend_sub){
+    _el_rek_period_pend_sub.textContent = periodPendDenda>0
+      ? periodCnt+' transaksi · denda '+rp(periodPendDenda)
+      : periodCnt+' transaksi';
+  }
   const _el_rek_period_peng=document.getElementById('rek-period-peng');if(_el_rek_period_peng){_el_rek_period_peng.textContent = rp(periodPeng);}
   const _el_rek_period_peng_sub=document.getElementById('rek-period-peng-sub');if(_el_rek_period_peng_sub){_el_rek_period_peng_sub.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
   const _el_rek_period_cnt=document.getElementById('rek-period-cnt');if(_el_rek_period_cnt){_el_rek_period_cnt.textContent = periodCnt;}
@@ -2805,7 +2945,20 @@ function renderKeuangan(){
   if(fp)data=data.filter(p=>p.payment===fp);
   const tb=document.getElementById('tbl-keuangan');
   if(!data.length){tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="empty-text">Belum ada data</div></div></td></tr>';return;}
-  tb.innerHTML=[...data].reverse().map((p,i)=>`<tr><td style="color:var(--text3);font-size:11px">${i+1}</td><td><strong>${p.nama}</strong></td><td>${p.motor}</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px">${p.durasi} hari</td><td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">${rp(p.total)}</td><td>${payPill(p.payment)}</td><td style="font-size:11px;color:var(--text3)">${formatWaktu(p.waktu||p.mulai)}</td></tr>`).join('');
+  tb.innerHTML=[...data].reverse().map((p,i)=>{
+    const dendaBayar = p.dendaDibayar||0;
+    return`<tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td><strong>${p.nama}</strong></td>
+      <td>${p.motor}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px">${p.durasi} hari</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600">${rp(p.total)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${dendaBayar>0?'var(--red)':'var(--text3)'}">${dendaBayar>0?rp(dendaBayar):'—'}</td>
+      <td>${payPill(p.payment)}</td>
+      <td style="font-size:11px;color:var(--text3)">${formatWaktu(p.waktu||p.mulai)}</td>
+    </tr>`;
+  }).join('');
+  renderRiwayatDenda();
 }
 
 // ===== LAPORAN =====
@@ -4027,6 +4180,45 @@ downloadFiltered = function(){
   </div>
 </div>
 
+
+<!-- MODAL KONFIRMASI DENDA -->
+<div class="modal-bg" id="modal-denda" style="z-index:9000">
+  <div class="modal-denda-box">
+    <div style="font-size:16px;font-weight:700;color:var(--text-body);margin-bottom:4px">Konfirmasi Pengembalian</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:20px" id="denda-modal-sub">—</div>
+    <div class="denda-confirm-row">
+      <span class="denda-confirm-label">Total Sewa</span>
+      <span class="denda-confirm-val" id="denda-modal-total">Rp 0</span>
+    </div>
+    <div class="denda-confirm-row" style="background:var(--red-soft);border-radius:8px;padding:10px 12px;margin:8px 0;border:none">
+      <span class="denda-confirm-label" style="color:var(--red)">⏰ Terlambat</span>
+      <span class="denda-confirm-val" style="color:var(--red)" id="denda-modal-jam">0 jam</span>
+    </div>
+    <div class="denda-confirm-row">
+      <span class="denda-confirm-label" style="color:var(--red);font-weight:600">Denda Keterlambatan</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:13px;color:var(--text2)">Rp</span>
+        <input type="number" id="denda-modal-input" min="0" step="1000"
+          style="width:130px;font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--red);border:1.5px solid var(--red);border-radius:8px;padding:6px 10px;background:var(--red-soft);outline:none;text-align:right">
+      </div>
+    </div>
+    <div class="denda-confirm-row" style="margin-top:4px">
+      <span class="denda-confirm-label" style="font-weight:700">Total Tagihan</span>
+      <span class="denda-confirm-val" style="color:var(--green);font-size:18px" id="denda-modal-tagihan">Rp 0</span>
+    </div>
+    <div style="margin-top:6px">
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">Catatan denda (opsional)</label>
+      <input type="text" id="denda-modal-catatan" placeholder="Misal: ban bocor, motor kotor, dll"
+        style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--surface2);color:var(--text-body);outline:none">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-ghost" style="flex:1" onclick="tutupModalDenda()">Batal</button>
+      <button class="btn btn-primary" style="flex:2;background:var(--green);justify-content:center" onclick="konfirmasiSelesaiDenda()">
+        ✓ Selesaikan & Simpan Denda
+      </button>
+    </div>
+  </div>
+</div>
 </div><!-- /#main-app -->
 </body>
 </html>
