@@ -1236,23 +1236,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
     <!-- PENGELUARAN -->
     <div class="page" id="page-pengeluaran">
-      <div class="peng-rekap">
-        <div class="peng-card">
-          <div class="peng-label">Total Pendapatan</div>
-          <div class="peng-val peng-green" id="peng-pendapatan">Rp 0</div>
-          <div class="peng-sub" id="peng-pendapatan-sub">Dari 0 transaksi</div>
-        </div>
-        <div class="peng-card">
-          <div class="peng-label">Total Pengeluaran</div>
-          <div class="peng-val peng-red" id="peng-total">Rp 0</div>
-          <div class="peng-sub" id="peng-total-sub">0 entri</div>
-        </div>
-        <div class="peng-card">
-          <div class="peng-label">Laba Bersih</div>
-          <div class="peng-val peng-blue" id="peng-laba">Rp 0</div>
-          <div class="peng-sub">Pendapatan − Pengeluaran</div>
-        </div>
-      </div>
+
       <div class="card" style="margin-bottom:16px">
         <div class="card-header">
           <div>
@@ -2105,9 +2089,10 @@ function renderDashboard(){
 
   const totalPend=filtered.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
   const pendBulan=bulanIni.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
-  const tersewa=stokData.reduce((a,b)=>a+(b.total-b.avail),0);
-  const tersedia=stokData.reduce((a,b)=>a+b.avail,0);
+  // Hitung tersewa dari pesanan aktif (lebih akurat dari stok.avail)
+  const tersewa=pesanan.filter(p=>p.status==='Aktif').length;
   const totalUnit=stokData.reduce((a,b)=>a+b.total,0);
+  const tersedia=Math.max(0, totalUnit-tersewa);
 
   document.getElementById('stat-total').textContent=filtered.length;
   // Badge: kalau period bukan bulan, tetap tampilkan info bulan ini sebagai konteks
