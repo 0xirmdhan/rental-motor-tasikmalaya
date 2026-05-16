@@ -1698,6 +1698,68 @@ let riwayatDenda = []; // {id, pesananId, nama, motor, jamTerlambat, denda, cata
 const DENDA_PER_HARI = 50000; // tidak dipakai lagi
 let DENDA_PER_JAM = parseInt(localStorage.getItem('rm_denda_perjam')||'10000');
 
+// Denda per motor: { 'Honda Beat': 15000, 'Vespa Matic': 20000, ... }
+let DENDA_PER_MOTOR = (function(){
+  try{ return JSON.parse(localStorage.getItem('rm_denda_permotor')||'{}'); }catch(e){ return {}; }
+})();
+
+function getDendaMotor(motorName){
+  if(DENDA_PER_MOTOR && DENDA_PER_MOTOR[motorName] > 0) return DENDA_PER_MOTOR[motorName];
+  return DENDA_PER_JAM;
+}
+
+function initDendaUI(){
+  const inputDefault = document.getElementById('setting-denda');
+  if(inputDefault) inputDefault.value = DENDA_PER_JAM;
+  const currentEl = document.getElementById('denda-current');
+  if(currentEl) currentEl.textContent = 'Rp ' + DENDA_PER_JAM.toLocaleString('id-ID') + '/jam';
+  const list = document.getElementById('denda-per-motor-list');
+  if(!list) return;
+  if(!stokData || !stokData.length){
+    list.innerHTML = '<p style="font-size:12px;color:var(--text3)">Belum ada motor terdaftar.</p>';
+    return;
+  }
+  list.innerHTML = stokData.map(m => {
+    const val = DENDA_PER_MOTOR[m.name] || '';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border)">' +
+      '<span style="flex:1;font-size:13px;font-weight:600;color:var(--text-body)">' + m.name + '</span>' +
+      '<span style="font-size:12px;color:var(--text3);white-space:nowrap">Denda/jam (Rp)</span>' +
+      '<input type="number" min="0" step="1000" data-motor="' + m.name + '" class="denda-motor-input" value="' + val + '" placeholder="' + DENDA_PER_JAM + ' (default)" style="width:140px;padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:JetBrains Mono,monospace;background:var(--surface);color:var(--text-body);outline:none">' +
+      '</div>';
+  }).join('');
+}
+
+function previewDenda(val){
+  const currentEl = document.getElementById('denda-current');
+  const v = parseInt(val) || 0;
+  if(currentEl) currentEl.textContent = 'Rp ' + v.toLocaleString('id-ID') + '/jam';
+}
+
+function saveDenda(){
+  const val = parseInt(document.getElementById('setting-denda').value) || 0;
+  if(val < 0){ showToast('Denda tidak boleh negatif'); return; }
+  DENDA_PER_JAM = val;
+  localStorage.setItem('rm_denda_perjam', val);
+  const currentEl = document.getElementById('denda-current');
+  if(currentEl) currentEl.textContent = 'Rp ' + val.toLocaleString('id-ID') + '/jam';
+  syncDendaToSupabase();
+  showToast('Denda default disimpan: Rp ' + val.toLocaleString('id-ID') + '/jam');
+}
+
+function saveDendaPerMotor(){
+  const inputs = document.querySelectorAll('.denda-motor-input');
+  inputs.forEach(inp => {
+    const motor = inp.getAttribute('data-motor');
+    const val = parseInt(inp.value) || 0;
+    if(val > 0){ DENDA_PER_MOTOR[motor] = val; }
+    else { delete DENDA_PER_MOTOR[motor]; }
+  });
+  localStorage.setItem('rm_denda_permotor', JSON.stringify(DENDA_PER_MOTOR));
+  syncDendaToSupabase();
+  showToast('Denda per motor berhasil disimpan');
+  initDendaUI();
+}
+
 
 // ===== SUPABASE HELPERS =====
 function setDbStatus(ok, msg){
@@ -2863,9 +2925,10 @@ function openModalDenda(idx){
   const p = pesanan[idx];
   const denda = hitungDenda(p);
   const jamTerlambat = getJamTerlambat(p);
-  document.getElementById('denda-modal-sub').textContent = p.nama + ' · ' + p.motor;
+  const tarifMotor = getDendaMotor(p.motor);
+  document.getElementById('denda-modal-sub').textContent = p.nama + ' · ' + p.motor + '  |  Tarif: ' + rp(tarifMotor) + '/jam';
   document.getElementById('denda-modal-total').textContent = rp(p.total);
-  document.getElementById('denda-modal-jam').textContent = jamTerlambat + ' jam';
+  document.getElementById('denda-modal-jam').textContent = jamTerlambat + ' jam (× ' + rp(tarifMotor) + '/jam)';
   const inp = document.getElementById('denda-modal-input');
   inp.value = denda;
   inp.oninput = updateDendaTagihan;
@@ -3895,6 +3958,22 @@ async function loadNomorPemilik(){
     const {data, error} = await sb.from('settings').select('value').eq('key','nomor_pemilik').single();
     if(!error && data) NOMOR_PEMILIK = data.value;
   }catch(e){ console.warn('Gagal load nomor pemilik:', e); }
+  // Load denda settings dari Supabase jika ada
+  try{
+    const {data: dData} = await sb.from('settings').select('value').eq('key','denda_perjam').single();
+    if(dData && dData.value){ DENDA_PER_JAM = parseInt(dData.value)||DENDA_PER_JAM; localStorage.setItem('rm_denda_perjam', DENDA_PER_JAM); }
+    const {data: dmData} = await sb.from('settings').select('value').eq('key','denda_permotor').single();
+    if(dmData && dmData.value){ DENDA_PER_MOTOR = JSON.parse(dmData.value)||{}; localStorage.setItem('rm_denda_permotor', JSON.stringify(DENDA_PER_MOTOR)); }
+  }catch(e){ /* settings table mungkin belum ada kolom ini, gunakan localStorage */ }
+}
+
+// Sync denda settings ke Supabase (best-effort, tidak wajib)
+async function syncDendaToSupabase(){
+  if(!sb) return;
+  try{
+    await sb.from('settings').upsert([{key:'denda_perjam', value:String(DENDA_PER_JAM)}], {onConflict:'key'});
+    await sb.from('settings').upsert([{key:'denda_permotor', value:JSON.stringify(DENDA_PER_MOTOR)}], {onConflict:'key'});
+  }catch(e){ /* silent — tabel settings mungkin belum ada kolom ini */ }
 }
 
 // ===== NOTIF H-1 =====
