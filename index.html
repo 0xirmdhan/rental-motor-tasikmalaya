@@ -1900,10 +1900,8 @@ function parseLocalDate(str){
   return isNaN(d)?null:d;
 }
 function parseWaktu(p){
-  // Untuk filter period: prioritaskan waktu input (p.waktu) karena lebih akurat
-  // p.mulai = tanggal mulai sewa (bisa beda hari dari input)
+  if(p.mulai)return new Date(p.mulai);
   if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d;}
-  if(p.mulai){const d=parseLocalDate(p.mulai);if(d)return d;}
   return new Date();
 }
 function statusPill(s){const m={Aktif:'pill-blue',Selesai:'pill-green',Dibatalkan:'pill-red'};return`<span class="pill ${m[s]||'pill-gray'}">${s}</span>`;}
@@ -1997,14 +1995,10 @@ function goPage(id,btn){
   if(id==='pesanan')renderPesanan();
   if(id==='stok')renderStok();
   if(id==='keuangan'){
-    // Sync period rekap dengan toggle dashboard
-    // Dashboard: 'hari'/'bulan'/'semua' → Rekap: 'hari'/'bulan'/'semua' (minggu tetap bisa dipilih manual)
-    const dashToRekap = {hari:'hari', bulan:'bulan', semua:'semua'};
-    const syncedPeriod = dashToRekap[_dashPeriod] || 'hari';
-    currentPeriod = syncedPeriod;
+    // Aktifkan tab sesuai _dashPeriod saat ini
     const keuPage2 = document.getElementById('page-keuangan');
     if(keuPage2) keuPage2.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
-    const activeTab = document.getElementById('ptab-'+syncedPeriod);
+    const activeTab = document.getElementById('ptab-'+(_dashPeriod==='minggu'?'minggu':_dashPeriod)||'ptab-hari');
     if(activeTab) activeTab.classList.add('active');
     renderKeuangan();
   }
@@ -2726,9 +2720,7 @@ function setPeriod(p, btn){
   renderKeuangan();
 }
 function getPeriodData(){
-  // Pakai getFilteredByPeriod() yang sama dengan dashboard — sudah terbukti benar
-  // Filter tambahan: exclude Dibatalkan
-  return getFilteredByPeriod().filter(p=>p.status!=='Dibatalkan');
+  return getFilteredByPeriod();
 }
 function renderKeuangan(){
   const fm=document.getElementById('keu-filter-motor').value;
