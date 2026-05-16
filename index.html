@@ -629,6 +629,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
       Data Pesanan
       <span class="nav-badge" id="badge-pesanan">0</span>
+      <span class="nav-badge-terlambat" id="badge-terlambat" style="display:none;margin-left:2px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;font-family:'JetBrains Mono',monospace">0 ⚠</span>
     </button>
     <button class="nav-item" id="nav-input-pesanan" onclick="goPage('input',this)">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
@@ -862,7 +863,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap Penyewa</label>
+            <label>Nama Lengkap PIC</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1530,7 +1531,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
-        Jl. Lengkong Tengah, Tawangsari,<br>
+        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
         Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
@@ -1939,6 +1940,7 @@ async function loadAllData(){
   }
   buildMotorDropdown();
   renderDashboard();
+  updateTerlambatBadge();
 }
 
 function _loadFromLocalStorage(){
@@ -1976,7 +1978,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2053,6 +2055,18 @@ function getSisaWaktu(p){
   return menit+'m';
 }
 function isTerlambat(p){ return hitungDenda(p)>0; }
+
+function updateTerlambatBadge(){
+  const jumlah = pesanan.filter(p => p.status==='Aktif' && isTerlambat(p)).length;
+  const badge = document.getElementById('badge-terlambat');
+  if(!badge) return;
+  if(jumlah > 0){
+    badge.textContent = jumlah + ' ⚠';
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
 
 // ===== BUILD DROPDOWNS =====
 function buildMotorDropdown(){
@@ -2228,6 +2242,7 @@ function renderDashboard(){
   document.getElementById('stat-tersewa-badge').textContent='dari '+totalUnit+' unit';
   document.getElementById('stat-tersedia').textContent=tersedia;
   document.getElementById('badge-pesanan').textContent=pesanan.length;
+  updateTerlambatBadge();
   const stokTag=document.getElementById('stat-stok-tag');
   if(tersedia===0){stokTag.textContent='Stok habis!';stokTag.className='stat-tag tag-red';}
   else if(tersedia<=5){stokTag.textContent='Stok menipis';stokTag.className='stat-tag tag-amber';}
@@ -2369,6 +2384,7 @@ function renderPesanan(){
       pagesBtns += `<button onclick="goToPesananPage(${i})" style="min-width:32px;height:32px;padding:0 8px;border-radius:8px;border:1.5px solid ${i===pesananPage?'var(--accent)':'var(--border)'};background:${i===pesananPage?'var(--accent)':'var(--surface)'};color:${i===pesananPage?'#fff':'var(--text2)'};font-size:12px;font-weight:600;cursor:pointer">${i}</button>`;
     }
     pagesEl.innerHTML = pagesBtns;
+  updateTerlambatBadge();
   } catch(err) {
     console.error('[renderPesanan error]', err);
     const tb = document.getElementById('tbl-pesanan');
@@ -2443,7 +2459,7 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
-      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Lengkong Tengah, Tawangsari,</div>
+      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
       <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
@@ -2718,6 +2734,7 @@ async function simpanPesanan(){
   await sbUpsertPesanan(entry);
   if(si>=0) await sbUpsertStok(stokData[si]);
   document.getElementById('badge-pesanan').textContent=pesanan.length;
+  updateTerlambatBadge();
   const detail=document.getElementById('konfirmasi-simpan-detail');
   if(detail) detail.textContent=nama+' · '+mname+' · '+dur+' hari · '+rp(total);
   window._lastSavedIdx=0;
@@ -3547,7 +3564,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -4051,6 +4068,7 @@ function startDashInterval(){
     try{
       const dashPage = document.getElementById('page-dashboard');
       if(dashPage && dashPage.classList.contains('active')) renderDashboard();
+    updateTerlambatBadge();
     }catch(e){ console.error('[interval error]', e); }
   }, 60000);
 }
