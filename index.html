@@ -2949,20 +2949,67 @@ async function toggleBlacklist(ktpNo, hp){
   renderKonsumen();renderPesanan();
 }
 
+let _ktpCountdownInterval = null;
+
 async function lihatKTPKonsumen(ktpNo, hp){
   const candidates = pesanan.filter(x=>(x.ktpNo&&x.ktpNo===ktpNo)||(x.hp===hp));
   const p = candidates.find(x=>x.ktpImgUrl) || candidates[0];
   const stored = p ? (p.ktpImgUrl || null) : null;
   if(!stored){showToast('Foto KTP tidak tersedia — mungkin belum diupload saat input pesanan');return;}
-  showToast('Membuka foto KTP...');
-  const signedUrl = await getSignedUrl(stored, 60);
-  if(!signedUrl){showToast('Gagal memuat foto KTP, coba lagi');return;}
-  const w=window.open('','_blank','width=700,height=600');
-  const ktpHtml = '<html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#111;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh\"><button onclick=\"window.history.back()\" style=\"position:fixed;top:12px;left:12px;padding:8px 16px;background:#fff;color:#111;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999\">← Kembali</button><img src=\"'+signedUrl+'\" style=\"max-width:100%;max-height:90vh;border-radius:8px;margin-top:48px\"><p style=\"position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#666;font-size:11px;font-family:sans-serif\">Link expired dalam 60 detik</p></body></html>';
-  const ktpBlob = new Blob([ktpHtml], {type:'text/html'});
-  const ktpUrl = URL.createObjectURL(ktpBlob);
-  window.open(ktpUrl, '_blank');
-  setTimeout(()=>URL.revokeObjectURL(ktpUrl), 65000);
+
+  // Tampilkan modal dulu, reset ke loading state
+  const modal = document.getElementById('modal-ktp-viewer');
+  const imgEl = document.getElementById('ktp-viewer-img');
+  const loadEl = document.getElementById('ktp-loading');
+  const countdownEl = document.getElementById('ktp-countdown');
+
+  imgEl.style.display = 'none';
+  imgEl.src = '';
+  loadEl.style.display = 'block';
+  countdownEl.textContent = '15';
+  modal.classList.add('show');
+
+  // Clear countdown lama jika ada
+  if(_ktpCountdownInterval) clearInterval(_ktpCountdownInterval);
+
+  // Generate signed URL
+  const signedUrl = await getSignedUrl(stored, 15);
+  if(!signedUrl){
+    modal.classList.remove('show');
+    showToast('Gagal memuat foto KTP, coba lagi');
+    return;
+  }
+
+  // Tampilkan gambar
+  imgEl.onload = function(){
+    loadEl.style.display = 'none';
+    imgEl.style.display = 'block';
+  };
+  imgEl.onerror = function(){
+    loadEl.innerHTML = '<div style="font-size:24px;margin-bottom:8px">⚠️</div><div style="color:#f87171">Gagal memuat gambar.<br>Signed URL mungkin sudah expired.<br><button onclick="tutupModalKTP()" style="margin-top:8px;padding:6px 14px;background:#333;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Tutup</button></div>';
+  };
+  imgEl.src = signedUrl;
+
+  // Countdown 60 detik lalu auto-close
+  let sisa = 15;
+  _ktpCountdownInterval = setInterval(()=>{
+    sisa--;
+    if(countdownEl) countdownEl.textContent = sisa;
+    if(sisa <= 0){
+      clearInterval(_ktpCountdownInterval);
+      tutupModalKTP();
+      showToast('Waktu lihat KTP habis (15 detik)');
+    }
+  }, 1000);
+}
+
+function tutupModalKTP(){
+  const modal = document.getElementById('modal-ktp-viewer');
+  const imgEl = document.getElementById('ktp-viewer-img');
+  modal.classList.remove('show');
+  // Hapus src segera agar gambar tidak bisa di-inspect dari memory
+  setTimeout(()=>{ imgEl.src=''; }, 300);
+  if(_ktpCountdownInterval){ clearInterval(_ktpCountdownInterval); _ktpCountdownInterval=null; }
 }
 
 function renderKonsumen(){
@@ -3769,6 +3816,29 @@ downloadFiltered = function(){
     </div>
   </div>
 </div>
+<!-- MODAL LIHAT KTP -->
+<div class="modal-bg" id="modal-ktp-viewer" style="z-index:9990" onclick="if(event.target===this)tutupModalKTP()">
+  <div class="modal-box" style="max-width:640px;padding:0;overflow:hidden;background:#111;border:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#1a1a1a;border-bottom:1px solid #333">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff">Foto KTP Pelanggan</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">Link aman — expired dalam <span id="ktp-countdown" style="color:#fbbf24;font-weight:700">15</span> detik</div>
+      </div>
+      <button onclick="tutupModalKTP()" style="background:#333;border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">✕ Tutup</button>
+    </div>
+    <div id="ktp-viewer-body" style="display:flex;align-items:center;justify-content:center;min-height:200px;padding:16px">
+      <div id="ktp-loading" style="color:#888;font-size:13px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">⏳</div>
+        Memuat foto KTP...
+      </div>
+      <img id="ktp-viewer-img" src="" alt="Foto KTP" style="display:none;max-width:100%;max-height:75vh;border-radius:8px;object-fit:contain">
+    </div>
+    <div style="padding:10px 16px;background:#1a1a1a;border-top:1px solid #333;text-align:center">
+      <div style="font-size:11px;color:#666">🔒 Foto ini hanya bisa dilihat selama 60 detik. Tidak tersimpan di browser.</div>
+    </div>
+  </div>
+</div>
+
 </div><!-- /#main-app -->
 </body>
 </html>
