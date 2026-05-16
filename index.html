@@ -1995,10 +1995,12 @@ function goPage(id,btn){
   if(id==='pesanan')renderPesanan();
   if(id==='stok')renderStok();
   if(id==='keuangan'){
-    // Aktifkan tab sesuai _dashPeriod saat ini
+    // Reset ke 'hari' setiap kali halaman Keuangan dibuka
+    _keuPeriod = 'hari';
+    _dashPeriod = 'hari';
     const keuPage2 = document.getElementById('page-keuangan');
     if(keuPage2) keuPage2.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
-    const activeTab = document.getElementById('ptab-'+(_dashPeriod==='minggu'?'minggu':_dashPeriod)||'ptab-hari');
+    const activeTab = document.getElementById('ptab-hari');
     if(activeTab) activeTab.classList.add('active');
     renderKeuangan();
   }
@@ -2705,18 +2707,14 @@ function renderStok(){
 }
 
 // ===== KEUANGAN =====
-// currentPeriod digantikan _dashPeriod (shared dengan dashboard)
+// _keuPeriod: state period khusus Rekap Keuangan (terpisah dari dashboard)
+let _keuPeriod = 'hari';
 function setPeriod(p, btn){
-  // Sync ke _dashPeriod biar pakai filter yang sama dengan dashboard
-  _dashPeriod = p;
+  _keuPeriod = p;
+  _dashPeriod = p; // sync sementara agar getFilteredByPeriod() pakai nilai yg benar
   const keuPage = document.getElementById('page-keuangan');
   if(keuPage) keuPage.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  // Sync juga tombol dashboard
-  ['hari','bulan','semua'].forEach(x=>{
-    const b=document.getElementById('ptb-'+x);
-    if(b) b.classList.toggle('active', x===p);
-  });
   renderKeuangan();
 }
 function getPeriodData(){
@@ -2737,7 +2735,7 @@ function renderKeuangan(){
   const periodData = getPeriodData();
   const periodPend = periodData.reduce((a,b)=>a+(b.total||0),0);
   const periodCnt = periodData.length;
-  const periodLabels = {hari:'hari ini', bulan:'bulan ini', semua:'semua data'};
+  const periodLabels = {hari:'hari ini', minggu:'minggu ini', bulan:'bulan ini', semua:'semua data'};
 
   // Hitung pengeluaran per periode
   const periodPeng = (()=>{
