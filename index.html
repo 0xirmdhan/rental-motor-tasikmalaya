@@ -2068,6 +2068,18 @@ function getFilteredByPeriod(){
       return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
     });
   }
+  if(_dashPeriod === 'minggu'){
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay()===0?-6:1));
+    startOfWeek.setHours(0,0,0,0);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate()+6);
+    endOfWeek.setHours(23,59,59,999);
+    return pesanan.filter(p=>{
+      const d = parseWaktu(p);
+      return d >= startOfWeek && d <= endOfWeek;
+    });
+  }
   return [...pesanan]; // semua
 }
 
@@ -2699,37 +2711,24 @@ function renderStok(){
 }
 
 // ===== KEUANGAN =====
-let currentPeriod = 'hari';
+// currentPeriod digantikan _dashPeriod (shared dengan dashboard)
 function setPeriod(p, btn){
-  currentPeriod = p;
-  // Scope ke page-keuangan saja, jangan kena tab konsumen
+  // Sync ke _dashPeriod biar pakai filter yang sama dengan dashboard
+  _dashPeriod = p;
   const keuPage = document.getElementById('page-keuangan');
   if(keuPage) keuPage.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  // Debug: konfirmasi period berubah dan data yang ditemukan
-  const debugData = getPeriodData();
-  console.log('[setPeriod] period='+p+' | found='+debugData.length+' records');
-  if(pesanan[0]) console.log('[setPeriod] sample waktu='+pesanan[0].waktu+' mulai='+pesanan[0].mulai+' parsed='+parseWaktu(pesanan[0]));
+  // Sync juga tombol dashboard
+  ['hari','bulan','semua'].forEach(x=>{
+    const b=document.getElementById('ptb-'+x);
+    if(b) b.classList.toggle('active', x===p);
+  });
   renderKeuangan();
 }
 function getPeriodData(){
-  const now = new Date();
-  const valid = pesanan.filter(p=>p.status!=='Dibatalkan');
-  if(currentPeriod === 'semua') return valid;
-  return valid.filter(p=>{
-    const d = parseWaktu(p);
-    if(currentPeriod === 'hari'){
-      return d.toDateString() === now.toDateString();
-    } else if(currentPeriod === 'minggu'){
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay() + (now.getDay()===0?-6:1));
-      startOfWeek.setHours(0,0,0,0);
-      const endOfWeek = new Date(startOfWeek); endOfWeek.setDate(startOfWeek.getDate()+6); endOfWeek.setHours(23,59,59,999);
-      return d >= startOfWeek && d <= endOfWeek;
-    } else { // bulan
-      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-    }
-  });
+  // Pakai getFilteredByPeriod() yang sama dengan dashboard — sudah terbukti benar
+  // Filter tambahan: exclude Dibatalkan
+  return getFilteredByPeriod().filter(p=>p.status!=='Dibatalkan');
 }
 function renderKeuangan(){
   const fm=document.getElementById('keu-filter-motor').value;
@@ -2746,17 +2745,17 @@ function renderKeuangan(){
   const periodData = getPeriodData();
   const periodPend = periodData.reduce((a,b)=>a+(b.total||0),0);
   const periodCnt = periodData.length;
-  const periodLabels = {hari:'hari ini', minggu:'minggu ini', bulan:'bulan ini', semua:'semua data'};
+  const periodLabels = {hari:'hari ini', bulan:'bulan ini', semua:'semua data'};
 
   // Hitung pengeluaran per periode
   const periodPeng = (()=>{
     const now2=new Date();
-    if(currentPeriod==='semua') return pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
+    if(_dashPeriod==='semua') return pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
     return pengeluaran.filter(p=>{
       const d=new Date(p.tgl||p.waktu);
       if(isNaN(d)) return false;
-      if(currentPeriod==='hari') return d.toDateString()===now2.toDateString();
-      if(currentPeriod==='minggu'){
+      if(_dashPeriod==='hari') return d.toDateString()===now2.toDateString();
+      if(_dashPeriod==='minggu'){
         const startOfWeek=new Date(now2);
         startOfWeek.setDate(now2.getDate()-now2.getDay()+(now2.getDay()===0?-6:1));
         startOfWeek.setHours(0,0,0,0);
@@ -2777,9 +2776,9 @@ function renderKeuangan(){
   document.getElementById('rek-period-pend').textContent = rp(periodPend);
   document.getElementById('rek-period-pend-sub').textContent = periodCnt+' transaksi';
   document.getElementById('rek-period-peng').textContent = rp(periodPeng);
-  document.getElementById('rek-period-peng-sub').textContent = periodLabels[currentPeriod];
+  document.getElementById('rek-period-peng-sub').textContent = periodLabels[_dashPeriod]||_dashPeriod;
   document.getElementById('rek-period-cnt').textContent = periodCnt;
-  document.getElementById('rek-period-label').textContent = periodLabels[currentPeriod];
+  document.getElementById('rek-period-label').textContent = periodLabels[_dashPeriod]||_dashPeriod;
   document.getElementById('rek-period-avg').textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';
 
   // Laba bersih total (semua waktu)
