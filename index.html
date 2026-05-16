@@ -356,10 +356,10 @@ input[type="date"],input[type="month"],input[type="week"]{
 .period-tab{padding:7px 16px;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text2);transition:all .15s}
 .period-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow-sm)}
 .rekap-period-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-.rekap-mini{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;box-shadow:var(--shadow-sm)}
-.rekap-mini-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
-.rekap-mini-val{font-size:20px;font-weight:700;color:var(--text-body);font-family:'JetBrains Mono',monospace;line-height:1}
-.rekap-mini-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.rekap-mini{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;box-shadow:var(--shadow-sm);box-sizing:border-box}
+.rekap-mini-label{font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.rekap-mini-val{font-size:22px;font-weight:700;color:var(--text-body);font-family:'JetBrains Mono',monospace;line-height:1;letter-spacing:-.02em}
+.rekap-mini-sub{font-size:11px;color:var(--text3);margin-top:6px}
 
 /* DASH LAYOUT */
 .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -522,6 +522,8 @@ body.role-pemilik .btn-hapus-pesanan{display:none!important}
   .card-header .btn{font-size:11px;padding:6px 10px}
   .rekap-row{grid-template-columns:1fr}
   .rekap-period-row{grid-template-columns:1fr 1fr}
+  #page-keuangan [style*="grid-template-columns:1fr 3fr"]{grid-template-columns:1fr!important}
+  #page-keuangan [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}
   .rekap-val{font-size:22px}
   .period-tabs{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .peng-rekap{grid-template-columns:1fr!important}
@@ -1081,8 +1083,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="period-tab" id="ptab-bulan" onclick="setPeriod('bulan',this)">Bulan Ini</button>
         <button class="period-tab" id="ptab-semua" onclick="setPeriod('semua',this)">Semua</button>
       </div>
-      <!-- Baris 1: 4 card kecil: Pendapatan Sewa, Pengeluaran, Rata-rata, Denda -->
-      <div class="rekap-period-row" style="grid-template-columns:repeat(4,1fr)">
+      <!-- Stats grid: 4 mini cards baris 1, Transaksi + Laba baris 2 -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px">
         <div class="rekap-mini">
           <div class="rekap-mini-label">Pendapatan Sewa</div>
           <div class="rekap-mini-val" id="rek-period-pend" style="color:var(--green)">Rp 0</div>
@@ -1091,30 +1093,29 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <div class="rekap-mini">
           <div class="rekap-mini-label">Pengeluaran</div>
           <div class="rekap-mini-val" id="rek-period-peng" style="color:var(--red)">Rp 0</div>
-          <div class="rekap-mini-sub" id="rek-period-peng-sub">periode ini</div>
+          <div class="rekap-mini-sub" id="rek-period-peng-sub">hari ini</div>
         </div>
         <div class="rekap-mini">
           <div class="rekap-mini-label">Rata-rata per Transaksi</div>
           <div class="rekap-mini-val" id="rek-period-avg">Rp 0</div>
           <div class="rekap-mini-sub" id="rek-period-cnt-sub">0 transaksi</div>
         </div>
-        <div class="rekap-mini" style="border-color:var(--red)">
+        <div class="rekap-mini" style="border-color:var(--red);border-width:1.5px">
           <div class="rekap-mini-label" style="color:var(--red)">Pendapatan Denda</div>
           <div class="rekap-mini-val" id="rek-period-denda" style="color:var(--red)">Rp 0</div>
           <div class="rekap-mini-sub" id="rek-period-denda-sub">0 kasus</div>
         </div>
       </div>
-      <!-- Baris 2: Transaksi + Laba Bersih besar -->
-      <div class="rekap-row" style="margin-top:-4px">
-        <div class="rekap-card" style="max-width:200px">
-          <div class="rekap-label">Transaksi</div>
-          <div class="rekap-val" id="rek-period-cnt" style="font-size:36px">0</div>
-          <div class="rekap-sub">jumlah pesanan</div>
+      <div style="display:grid;grid-template-columns:1fr 3fr;gap:14px;margin-bottom:20px">
+        <div class="rekap-mini">
+          <div class="rekap-mini-label">Transaksi</div>
+          <div class="rekap-mini-val" id="rek-period-cnt" style="font-size:32px;margin-top:4px">0</div>
+          <div class="rekap-mini-sub" style="margin-top:6px">jumlah pesanan</div>
         </div>
-        <div class="rekap-card" id="rek-period-laba-card" style="flex:1;border-width:2px">
-          <div class="rekap-label" id="rek-laba-total-label">Laba Bersih</div>
-          <div class="rekap-val" id="rek-period-laba" style="font-size:40px">Rp 0</div>
-          <div class="rekap-sub" id="rek-laba-total-sub">Pendapatan Sewa + Denda − Pengeluaran</div>
+        <div class="rekap-mini" id="rek-period-laba-card" style="border-color:var(--blue);border-width:2px">
+          <div class="rekap-mini-label" id="rek-laba-total-label" style="color:var(--blue)">Laba Bersih (Hari Ini)</div>
+          <div class="rekap-mini-val" id="rek-period-laba" style="font-size:36px;color:var(--blue);margin-top:4px">Rp 0</div>
+          <div class="rekap-mini-sub" id="rek-laba-total-sub" style="margin-top:6px">Sewa Rp 0 · Operasional −Rp 0</div>
         </div>
       </div>
       <div class="card" style="margin-bottom:16px">
