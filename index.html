@@ -1980,7 +1980,17 @@ function goPage(id,btn){
   if(id==='dashboard')renderDashboard();
   if(id==='pesanan')renderPesanan();
   if(id==='stok')renderStok();
-  if(id==='keuangan')renderKeuangan();
+  if(id==='keuangan'){
+    // Sync period rekap dengan toggle dashboard
+    // Dashboard: 'hari'/'bulan'/'semua' → Rekap: 'hari'/'bulan'/'semua' (minggu tetap bisa dipilih manual)
+    const dashToRekap = {hari:'hari', bulan:'bulan', semua:'semua'};
+    const syncedPeriod = dashToRekap[_dashPeriod] || 'hari';
+    currentPeriod = syncedPeriod;
+    document.querySelectorAll('.period-tab').forEach(t=>t.classList.remove('active'));
+    const activeTab = document.getElementById('ptab-'+syncedPeriod);
+    if(activeTab) activeTab.classList.add('active');
+    renderKeuangan();
+  }
   if(id==='laporan'){renderLaporan();setTimeout(initDendaUI,50);}
   if(id==='pengeluaran'){renderPengeluaran();}
   if(id==='konsumen'){renderKonsumen();renderRiwayat();}
