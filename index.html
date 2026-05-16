@@ -1492,7 +1492,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
-        Jl. Lengkong Tengah, Tawangsari,<br>
+        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
         Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
@@ -2143,7 +2143,7 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
-      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Lengkong Tengah, Tawangsari,</div>
+      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
       <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
@@ -2951,28 +2951,98 @@ async function toggleBlacklist(ktpNo, hp){
 
 let _ktpCountdownInterval = null;
 
+// Render gambar ke canvas + watermark nama user & timestamp
+// Canvas tidak bisa di-klik-kanan Save Image, dan URL tidak muncul di Network tab
+function renderKTPToCanvas(imageSrc, userName){
+  return new Promise((resolve, reject) => {
+    const canvas  = document.getElementById('ktp-viewer-canvas');
+    const overlay = document.getElementById('ktp-canvas-overlay');
+    const ctx     = canvas.getContext('2d');
+    const img     = new Image();
+
+    // CORS wajib agar canvas tidak jadi tainted (tainted = gabisa di-draw)
+    img.crossOrigin = 'anonymous';
+
+    img.onload = function(){
+      // Ukuran canvas = ukuran asli gambar (max 900px lebar)
+      const maxW = Math.min(img.naturalWidth, 900);
+      const scale = maxW / img.naturalWidth;
+      canvas.width  = maxW;
+      canvas.height = img.naturalHeight * scale;
+
+      // Draw foto KTP
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // === WATERMARK ===
+      const now = new Date().toLocaleString('id-ID', {
+        day:'2-digit', month:'short', year:'numeric',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+      });
+      const wmText = 'DILIHAT OLEH: ' + (userName||'Admin').toUpperCase() + '  |  ' + now;
+
+      // Watermark diagonal di tengah (semi-transparent, susah dihapus)
+      ctx.save();
+      ctx.translate(canvas.width/2, canvas.height/2);
+      ctx.rotate(-30 * Math.PI/180);
+      ctx.font = 'bold ' + Math.max(16, canvas.width * 0.028) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Shadow hitam dulu biar terbaca di foto terang/gelap
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = 'rgba(255,60,60,0.55)';
+      // Ulangi beberapa baris biar cover seluruh foto
+      for(let i = -2; i <= 2; i++){
+        ctx.fillText(wmText, 0, i * Math.max(60, canvas.height * 0.18));
+      }
+      ctx.restore();
+
+      // Watermark strip bawah — nama + waktu solid, selalu terbaca
+      const stripH = Math.max(28, canvas.height * 0.06);
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
+      ctx.fillRect(0, canvas.height - stripH, canvas.width, stripH);
+      ctx.font = 'bold ' + Math.max(11, stripH * 0.42) + 'px monospace';
+      ctx.fillStyle = '#ff4444';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 0;
+      ctx.fillText(wmText, canvas.width/2, canvas.height - stripH/2);
+      // === END WATERMARK ===
+
+      // Tampilkan canvas & overlay
+      canvas.style.display  = 'block';
+      overlay.style.display = 'block';
+      resolve();
+    };
+
+    img.onerror = function(){ reject(new Error('Gagal load gambar')); };
+    img.src = imageSrc;
+  });
+}
+
 async function lihatKTPKonsumen(ktpNo, hp){
   const candidates = pesanan.filter(x=>(x.ktpNo&&x.ktpNo===ktpNo)||(x.hp===hp));
   const p = candidates.find(x=>x.ktpImgUrl) || candidates[0];
   const stored = p ? (p.ktpImgUrl || null) : null;
   if(!stored){showToast('Foto KTP tidak tersedia — mungkin belum diupload saat input pesanan');return;}
 
-  // Tampilkan modal dulu, reset ke loading state
-  const modal = document.getElementById('modal-ktp-viewer');
-  const imgEl = document.getElementById('ktp-viewer-img');
-  const loadEl = document.getElementById('ktp-loading');
+  // Reset modal ke loading state
+  const modal     = document.getElementById('modal-ktp-viewer');
+  const canvas    = document.getElementById('ktp-viewer-canvas');
+  const overlay   = document.getElementById('ktp-canvas-overlay');
+  const loadEl    = document.getElementById('ktp-loading');
   const countdownEl = document.getElementById('ktp-countdown');
 
-  imgEl.style.display = 'none';
-  imgEl.src = '';
-  loadEl.style.display = 'block';
+  canvas.style.display  = 'none';
+  overlay.style.display = 'none';
+  loadEl.style.display  = 'block';
+  loadEl.innerHTML      = '<div style="font-size:24px;margin-bottom:8px">&#x23F3;</div>Memuat foto KTP...';
   countdownEl.textContent = '15';
   modal.classList.add('show');
 
-  // Clear countdown lama jika ada
   if(_ktpCountdownInterval) clearInterval(_ktpCountdownInterval);
 
-  // Generate signed URL
+  // Generate signed URL (15 detik)
   const signedUrl = await getSignedUrl(stored, 15);
   if(!signedUrl){
     modal.classList.remove('show');
@@ -2980,17 +3050,18 @@ async function lihatKTPKonsumen(ktpNo, hp){
     return;
   }
 
-  // Tampilkan gambar
-  imgEl.onload = function(){
-    loadEl.style.display = 'none';
-    imgEl.style.display = 'block';
-  };
-  imgEl.onerror = function(){
-    loadEl.innerHTML = '<div style="font-size:24px;margin-bottom:8px">⚠️</div><div style="color:#f87171">Gagal memuat gambar.<br>Signed URL mungkin sudah expired.<br><button onclick="tutupModalKTP()" style="margin-top:8px;padding:6px 14px;background:#333;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Tutup</button></div>';
-  };
-  imgEl.src = signedUrl;
+  // Nama user yang sedang login untuk watermark
+  const userName = (currentUser && currentUser.name) ? currentUser.name : 'Admin';
 
-  // Countdown 60 detik lalu auto-close
+  try{
+    await renderKTPToCanvas(signedUrl, userName);
+    loadEl.style.display = 'none';
+  }catch(err){
+    loadEl.innerHTML = '<div style="font-size:24px;margin-bottom:8px">&#x26A0;&#xFE0F;</div><div style="color:#f87171">Gagal memuat gambar.<br>Coba klik tombol KTP lagi.<br><button onclick="tutupModalKTP()" style="margin-top:8px;padding:6px 14px;background:#333;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px">Tutup</button></div>';
+    return;
+  }
+
+  // Countdown 15 detik lalu auto-close
   let sisa = 15;
   _ktpCountdownInterval = setInterval(()=>{
     sisa--;
@@ -3004,11 +3075,19 @@ async function lihatKTPKonsumen(ktpNo, hp){
 }
 
 function tutupModalKTP(){
-  const modal = document.getElementById('modal-ktp-viewer');
-  const imgEl = document.getElementById('ktp-viewer-img');
+  const modal   = document.getElementById('modal-ktp-viewer');
+  const canvas  = document.getElementById('ktp-viewer-canvas');
+  const overlay = document.getElementById('ktp-canvas-overlay');
   modal.classList.remove('show');
-  // Hapus src segera agar gambar tidak bisa di-inspect dari memory
-  setTimeout(()=>{ imgEl.src=''; }, 300);
+  // Bersihkan canvas agar pixel tidak tersisa di memory
+  setTimeout(()=>{
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width  = 0;
+    canvas.height = 0;
+    canvas.style.display  = 'none';
+    overlay.style.display = 'none';
+  }, 300);
   if(_ktpCountdownInterval){ clearInterval(_ktpCountdownInterval); _ktpCountdownInterval=null; }
 }
 
@@ -3826,15 +3905,16 @@ downloadFiltered = function(){
       </div>
       <button onclick="tutupModalKTP()" style="background:#333;border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">✕ Tutup</button>
     </div>
-    <div id="ktp-viewer-body" style="display:flex;align-items:center;justify-content:center;min-height:200px;padding:16px">
+    <div id="ktp-viewer-body" style="display:flex;align-items:center;justify-content:center;min-height:200px;padding:16px;position:relative;user-select:none;-webkit-user-select:none">
       <div id="ktp-loading" style="color:#888;font-size:13px;text-align:center">
-        <div style="font-size:24px;margin-bottom:8px">⏳</div>
+        <div style="font-size:24px;margin-bottom:8px">&#x23F3;</div>
         Memuat foto KTP...
       </div>
-      <img id="ktp-viewer-img" src="" alt="Foto KTP" style="display:none;max-width:100%;max-height:75vh;border-radius:8px;object-fit:contain">
+      <canvas id="ktp-viewer-canvas" style="display:none;max-width:100%;border-radius:8px;cursor:not-allowed" oncontextmenu="return false" ondragstart="return false"></canvas>
+      <div id="ktp-canvas-overlay" style="display:none;position:absolute;inset:16px;z-index:2;cursor:not-allowed" oncontextmenu="return false"></div>
     </div>
     <div style="padding:10px 16px;background:#1a1a1a;border-top:1px solid #333;text-align:center">
-      <div style="font-size:11px;color:#666">🔒 Foto ini hanya bisa dilihat selama 60 detik. Tidak tersimpan di browser.</div>
+      <div style="font-size:11px;color:#666">&#x1F512; Foto di-render via canvas &middot; Ter-watermark &middot; Tidak bisa disimpan</div>
     </div>
   </div>
 </div>
