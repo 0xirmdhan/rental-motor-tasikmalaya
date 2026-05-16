@@ -2216,7 +2216,7 @@ function renderPesanan(){
     if(p.status==='Aktif'&&denda>0){
       statusDisplay=`<span class="pill-terlambat">Terlambat ${jamTerlambat}j · ${rp(denda)}</span>`;
     } else if(p.status==='Aktif'&&sisaWaktu){
-      statusDisplay=statusPill(p.status)+` <span style="font-size:10px;color:var(--text3)">${sisaWaktu}</span>`;
+      statusDisplay=statusPill(p.status);
     }
     return`<tr>
       <td style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:11px">${origIdx+1}</td>
