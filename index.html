@@ -8,6 +8,7 @@
 <title>Dashboard Internal — Rental Motor Tasikmalaya</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -848,7 +849,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div class="form-row">
           <div class="fg" id="fg-nama">
-            <label>Nama Lengkap PIC</label>
+            <label>Nama Lengkap Penyewa</label>
             <div class="ac-wrap">
               <input type="text" id="new-nama" placeholder="Nama penyewa / penanggung jawab" autocomplete="off" oninput="acSearch(this.value)" onkeydown="acKeyNav(event)" onfocus="acSearch(this.value)">
               <div class="ac-dropdown" id="ac-dropdown"></div>
@@ -1521,7 +1522,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="struk-header-logo">RENTAL MOTOR TASIKMALAYA</div>
       <div class="struk-header-sub">
         Stasiun Tasikmalaya<br>
-        Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,<br>
+        Jl. Lengkong Tengah, Tawangsari,<br>
         Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111<br>
         081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB
       </div>
@@ -1853,6 +1854,8 @@ async function loadAllData(){
         stokData = resStok.data;
       }
       setDbStatus(true, '');
+      // Load nomor pemilik dari settings
+      await loadNomorPemilik();
       // Sync local backup
       saveAll();
     }catch(e){
@@ -1903,7 +1906,7 @@ function setJenisPenyewa(v){
   document.getElementById('tog-perorangan').classList.toggle('sel',v==='perorangan');
   document.getElementById('tog-perusahaan').classList.toggle('sel',v==='perusahaan');
   document.getElementById('fg-perusahaan-nama').style.display=v==='perusahaan'?'flex':'none';
-  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama PIC / Penanggung Jawab':'Nama Lengkap PIC';
+  document.getElementById('fg-nama').querySelector('label').textContent=v==='perusahaan'?'Nama Penyewa / Penanggung Jawab':'Nama Lengkap Penyewa';
 }
 const rp = v => 'Rp '+Number(v).toLocaleString('id-ID');
 function formatTgl(str){if(!str)return'-';const d=new Date(str);if(isNaN(d))return str;return d.toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'});}
@@ -2369,7 +2372,7 @@ function cetakStruk(){
     <div style="text-align:center;padding-bottom:16px;border-bottom:2px solid #111827;margin-bottom:16px">
       <div style="font-size:20px;font-weight:800;color:#111827;letter-spacing:1px;text-transform:uppercase">RENTAL MOTOR TASIKMALAYA</div>
       <div style="font-size:11px;color:#374151;margin-top:5px;font-weight:600">Stasiun Tasikmalaya</div>
-      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Letkol Komir Kartaman — Jl. Lengkong Tengah, Tawangsari,</div>
+      <div style="font-size:11px;color:#4b5563;margin-top:2px">Jl. Lengkong Tengah, Tawangsari,</div>
       <div style="font-size:11px;color:#4b5563">Kec. Tawang, Kab. Tasikmalaya, Jawa Barat 46111</div>
       <div style="font-size:11px;color:#4b5563;margin-top:4px">081927096973 &nbsp;·&nbsp; Buka 07.00 – 21.00 WIB</div>
       <div style="margin-top:10px;display:inline-block;background:#111827;color:#fff;font-size:11px;font-weight:700;padding:3px 16px;border-radius:100px;letter-spacing:.06em">STRUK RESMI SEWA MOTOR</div>
@@ -3478,7 +3481,7 @@ function renderKonsumen(){
     const hp=k.hp||'';
     const rowStyle=bl?'background:rgba(220,38,38,.04)':'';
     const namaDisplay=k.jenisPenyewa==='perusahaan'&&k.namaPerusahaan
-      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">PIC: ${k.nama}</div>`
+      ?`<div style="font-weight:600;color:var(--text-body)">${k.namaPerusahaan}</div><div style="font-size:11px;color:var(--text3)">Penyewa: ${k.nama}</div>`
       :`<strong>${k.nama}</strong>`;
     return`<tr style="${rowStyle}">
       <td style="color:var(--text3);font-size:11px">${i+1}</td>
@@ -3506,124 +3509,202 @@ function renderKonsumen(){
 }
 
 // ===== EXCEL =====
+// ===== EXCEL DATA BUILDERS =====
 function buildRowsDatabase(data){
-  // Sheet 1: Database ringkas
-  return data.map((p,i)=>({
-    'No': i+1,
-    'Jenis': p.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan',
-    'Nama Lengkap': p.nama,
-    'Nama Perusahaan': p.namaPerusahaan||'-',
-    'No. HP': p.hp,
-    'Alamat Rumah/Kantor': p.alamatRumah||'-',
-    'No. KTP/NIK': p.ktpNo||'-',
-    'Motor Terakhir': p.motor,
-    'Total Kunjungan': data.filter(x=>(x.ktpNo&&x.ktpNo===p.ktpNo)||(x.hp===p.hp)).length,
-    'Status': p.blacklist?'BLACKLIST':'Normal',
-    'Catatan Blacklist': p.catatanBlacklist||'-',
-  }));
+  return data.map((p,i)=>([
+    i+1,
+    p.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan',
+    p.nama,
+    p.namaPerusahaan||'-',
+    p.hp,
+    p.alamatRumah||'-',
+    p.ktpNo||'-',
+    p.motor,
+    data.filter(x=>(x.ktpNo&&x.ktpNo===p.ktpNo)||(x.hp===p.hp)).length,
+    p.blacklist?'BLACKLIST':'Normal',
+    p.catatanBlacklist||'-',
+  ]));
 }
 function buildRows(data){
-  // Sheet detail transaksi
-  return data.map((p,i)=>({
-    'No': i+1,
-    'Jenis Penyewa': p.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan',
-    'Nama': p.nama,
-    'Perusahaan': p.namaPerusahaan||'-',
-    'No HP': p.hp,
-    'Alamat Rumah': p.alamatRumah||'-',
-    'No KTP': p.ktpNo||'-',
-    'Motor': p.motor,
-    'Tgl Mulai': formatTgl(p.mulai),
-    'Tgl Selesai': formatTgl(p.selesai),
-    'Durasi (hari)': p.durasi,
-    'Total Harga': rp(p.total),
-    'Denda': rp(hitungDenda(p)),
-    'Metode Bayar': p.payment,
-    'Antar Jemput': p.antar,
-    'Alamat Antar': p.alamat||'-',
-    'Status': p.status,
-    'Catatan': p.catatan||'-',
-    'Waktu Input': formatWaktu(p.waktu||p.mulai),
-    'Dicatat Oleh': p.inputOleh||'-',
-    'Blacklist': p.blacklist?'YA':'Tidak',
-  }));
-}
-// ===== EXCEL HELPERS =====
-function addLaporanHeader(ws, numCols){
-  XLSX.utils.sheet_add_aoa(ws, [
-    ['LAPORAN PENJUALAN'],
-    ['RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya'],
-    ['Dicetak: '+new Date().toLocaleString('id-ID')],
-    []
-  ], {origin:'A1'});
-  if(!ws['!merges'])ws['!merges']=[];
-  ws['!merges'].push(
-    {s:{r:0,c:0},e:{r:0,c:numCols-1}},
-    {s:{r:1,c:0},e:{r:1,c:numCols-1}},
-    {s:{r:2,c:0},e:{r:2,c:numCols-1}}
-  );
-  // Row 1: LAPORAN PENJUALAN — green bg, white bold, centered, tall
-  ws['A1']={v:'LAPORAN PENJUALAN',t:'s',s:{font:{bold:true,sz:14,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'166534'}},alignment:{horizontal:'center',vertical:'center'}}};
-  // Row 2: subtitle — no bg, centered, medium
-  ws['A2']={v:'RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya',t:'s',s:{font:{sz:11,color:{rgb:'374151'}},alignment:{horizontal:'center'}}};
-  // Row 3: date — no bg, centered, small gray
-  ws['A3']={v:'Dicetak: '+new Date().toLocaleString('id-ID'),t:'s',s:{font:{sz:10,color:{rgb:'6B7280'}},alignment:{horizontal:'center'}}};
-  ws['!rows']=[{hpt:30},{hpt:18},{hpt:15},{hpt:4}];
-}
-function applyHeaderStyle(ws, headerRow, numCols){
-  // Column headers: green bg (matching title), white bold text, centered
-  const hStyle={font:{bold:true,sz:10,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'166534'}},alignment:{horizontal:'center',vertical:'center'}};
-  for(let c=0;c<numCols;c++){
-    const addr=XLSX.utils.encode_cell({r:headerRow,c});
-    if(ws[addr])ws[addr].s=hStyle;
-  }
-  // Add row height for header row
-  if(!ws['!rows'])ws['!rows']=[];
-  ws['!rows'][headerRow]={hpt:18};
-}
-function buildSheet(rows, colWidths, numHeaderRows){
-  const ws=XLSX.utils.json_to_sheet(rows,{origin:{r:numHeaderRows,c:0}});
-  ws['!cols']=colWidths;
-  return ws;
+  return data.map((p,i)=>([
+    i+1,
+    p.jenisPenyewa==='perusahaan'?'Perusahaan':'Perorangan',
+    p.nama,
+    p.namaPerusahaan||'-',
+    p.hp,
+    p.alamatRumah||'-',
+    p.ktpNo||'-',
+    p.motor,
+    formatTgl(p.mulai),
+    formatTgl(p.selesai),
+    p.durasi,
+    p.total||0,
+    p.dendaDibayar||hitungDenda(p)||0,
+    p.payment,
+    p.antar,
+    p.alamat||'-',
+    p.status,
+    p.catatan||'-',
+    formatWaktu(p.waktu||p.mulai),
+    p.inputOleh||'-',
+    p.blacklist?'YA':'Tidak',
+  ]));
 }
 
-function downloadExcel(){
+// ===== EXCELJS HELPERS =====
+const WARNA_HIJAU   = { argb: 'FF166534' };
+const WARNA_HIJAU2  = { argb: 'FF166534' };
+const WARNA_PUTIH   = { argb: 'FFFFFFFF' };
+const WARNA_ABU     = { argb: 'FFF1F5F9' };
+const WARNA_ABU2    = { argb: 'FFE2E8F0' };
+const WARNA_TEKS    = { argb: 'FF0F172A' };
+const WARNA_TEKS2   = { argb: 'FF475569' };
+const WARNA_MERAH   = { argb: 'FFDC2626' };
+const WARNA_HIJAU_L = { argb: 'FFDCFCE7' };
+const WARNA_KUNING  = { argb: 'FFFFF9C4' };
+
+function xjBorderAll(thin){
+  const s = thin ? {style:'thin',color:{argb:'FFE2E8F0'}} : {style:'medium',color:{argb:'FF166534'}};
+  return {top:s,left:s,bottom:s,right:s};
+}
+function xjBorderThin(){ return xjBorderAll(true); }
+
+function xjAddHeader(ws, title, cols){
+  // Row 1: Judul besar
+  ws.mergeCells(1, 1, 1, cols);
+  const r1 = ws.getCell(1,1);
+  r1.value = title;
+  r1.font = {bold:true, size:14, color:WARNA_PUTIH};
+  r1.fill = {type:'pattern', pattern:'solid', fgColor:WARNA_HIJAU};
+  r1.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(1).height = 32;
+
+  // Row 2: Nama perusahaan
+  ws.mergeCells(2, 1, 2, cols);
+  const r2 = ws.getCell(2,1);
+  r2.value = 'RENTAL MOTOR TASIKMALAYA — Stasiun Tasikmalaya';
+  r2.font = {bold:false, size:11, color:WARNA_TEKS2};
+  r2.alignment = {horizontal:'center', vertical:'middle'};
+  ws.getRow(2).height = 20;
+
+  // Row 3: Tanggal cetak
+  ws.mergeCells(3, 1, 3, cols);
+  const r3 = ws.getCell(3,1);
+  r3.value = 'Dicetak: ' + new Date().toLocaleString('id-ID');
+  r3.font = {size:9, italic:true, color:{argb:'FF6B7280'}};
+  r3.alignment = {horizontal:'center'};
+  ws.getRow(3).height = 14;
+
+  // Row 4: kosong
+  ws.getRow(4).height = 6;
+}
+
+function xjAddColHeaders(ws, row, headers){
+  const r = ws.getRow(row);
+  r.height = 22;
+  headers.forEach((h, i) => {
+    const cell = r.getCell(i+1);
+    cell.value = h;
+    cell.font = {bold:true, size:10, color:WARNA_PUTIH};
+    cell.fill = {type:'pattern', pattern:'solid', fgColor:WARNA_HIJAU};
+    cell.alignment = {horizontal:'center', vertical:'middle', wrapText:false};
+    cell.border = xjBorderAll(false);
+  });
+}
+
+function xjAddDataRows(ws, startRow, rows, isAlt){
+  rows.forEach((row, ri) => {
+    const exRow = ws.getRow(startRow + ri);
+    exRow.height = 18;
+    row.forEach((val, ci) => {
+      const cell = exRow.getCell(ci+1);
+      cell.value = val;
+      cell.font = {size:10, color:WARNA_TEKS};
+      cell.fill = {type:'pattern', pattern:'solid', fgColor: (isAlt && ri%2===1) ? WARNA_ABU : WARNA_PUTIH};
+      cell.border = xjBorderThin();
+      cell.alignment = {vertical:'middle', wrapText:false};
+    });
+  });
+}
+
+async function xjDownload(wb, filename){
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadExcel(){
   if(!pesanan.length){showToast('Belum ada data');return;}
-  const wb=XLSX.utils.book_new();
-  // Sheet 1: Database Konsumen
-  const unik=getKonsumenUnik(pesanan);
-  const dbRows=buildRowsDatabase(unik);
-  const wsDb=XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsDb,11);
-  XLSX.utils.sheet_add_json(wsDb,dbRows,{origin:{r:4,c:0}});
-  applyHeaderStyle(wsDb,4,11);
-  wsDb['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:35},{wch:18},{wch:18},{wch:14},{wch:12},{wch:25}];
-  XLSX.utils.book_append_sheet(wb,wsDb,'Database Konsumen');
-  // Sheet 2: Detail Transaksi
-  const detRows=buildRows(pesanan);
-  const wsDetail=XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsDetail,21);
-  XLSX.utils.sheet_add_json(wsDetail,detRows,{origin:{r:4,c:0}});
-  applyHeaderStyle(wsDetail,4,21);
-  wsDetail['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:12},{wch:30},{wch:12},{wch:25},{wch:20},{wch:14},{wch:10}];
-  XLSX.utils.book_append_sheet(wb,wsDetail,'Detail Transaksi');
-  XLSX.writeFile(wb,'RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Rental Motor Tasikmalaya';
+  wb.created = new Date();
+
+  // === SHEET 1: DATABASE KONSUMEN ===
+  const ws1 = wb.addWorksheet('Database Konsumen');
+  const h1 = ['No','Jenis','Nama Lengkap','Nama Perusahaan','No. HP','Alamat Rumah/Kantor','No. KTP/NIK','Motor Terakhir','Total Kunjungan','Status','Catatan Blacklist'];
+  ws1.columns = [{width:5},{width:14},{width:26},{width:24},{width:18},{width:36},{width:20},{width:20},{width:16},{width:14},{width:28}];
+  xjAddHeader(ws1, 'DATABASE KONSUMEN', 11);
+  xjAddColHeaders(ws1, 5, h1);
+  const unik = getKonsumenUnik(pesanan);
+  const db = buildRowsDatabase(unik);
+  xjAddDataRows(ws1, 6, db, true);
+  // Warnai baris BLACKLIST merah
+  db.forEach((row, i) => {
+    if(row[9]==='BLACKLIST'){
+      const r = ws1.getRow(6+i);
+      for(let c=1;c<=11;c++){
+        r.getCell(c).fill={type:'pattern',pattern:'solid',fgColor:WARNA_MERAH};
+        r.getCell(c).font={size:10,bold:true,color:WARNA_PUTIH};
+      }
+    }
+  });
+  ws1.views = [{state:'frozen',ySplit:5}];
+
+  // === SHEET 2: DETAIL TRANSAKSI ===
+  const ws2 = wb.addWorksheet('Detail Transaksi');
+  const h2 = ['No','Jenis','Nama','Perusahaan','No HP','Alamat Rumah','No KTP','Motor','Tgl Mulai','Tgl Selesai','Durasi (hari)','Total Harga','Denda','Metode Bayar','Antar Jemput','Alamat Antar','Status','Catatan','Waktu Input','Dicatat Oleh','Blacklist'];
+  ws2.columns = [{width:5},{width:14},{width:24},{width:22},{width:16},{width:30},{width:20},{width:20},{width:14},{width:14},{width:14},{width:16},{width:14},{width:16},{width:14},{width:30},{width:12},{width:26},{width:22},{width:16},{width:10}];
+  xjAddHeader(ws2, 'DETAIL TRANSAKSI', 21);
+  xjAddColHeaders(ws2, 5, h2);
+  const det = buildRows(pesanan);
+  xjAddDataRows(ws2, 6, det, true);
+  // Format kolom uang
+  det.forEach((row, i) => {
+    const r = ws2.getRow(6+i);
+    [12,13].forEach(c => {
+      const cell = r.getCell(c);
+      cell.numFmt = '"Rp"#,##0';
+      cell.alignment = {horizontal:'right', vertical:'middle'};
+    });
+    // Status warna
+    const statusCell = r.getCell(17);
+    if(statusCell.value==='Aktif') statusCell.font={size:10,bold:true,color:{argb:'FF166534'}};
+    else if(statusCell.value==='Dibatalkan') statusCell.font={size:10,bold:true,color:WARNA_MERAH};
+  });
+  ws2.views = [{state:'frozen',ySplit:5}];
+
+  await xjDownload(wb, 'RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
   showToast('Excel berhasil diunduh');
 }
-function downloadExcelKonsumen(){
-  const unik=getKonsumenUnik(pesanan);
+
+async function downloadExcelKonsumen(){
+  const unik = getKonsumenUnik(pesanan);
   if(!unik.length){showToast('Belum ada data konsumen');return;}
-  const wb=XLSX.utils.book_new();
-  const dbRows=buildRowsDatabase(unik);
-  const ws=XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(ws,11);
-  XLSX.utils.sheet_add_json(ws,dbRows,{origin:{r:4,c:0}});
-  applyHeaderStyle(ws,4,11);
-  ws['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:35},{wch:18},{wch:18},{wch:14},{wch:12},{wch:25}];
-  XLSX.utils.book_append_sheet(wb,ws,'Database Konsumen');
-  XLSX.writeFile(wb,'Database_Konsumen_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Database Konsumen');
+  const h = ['No','Jenis','Nama Lengkap','Nama Perusahaan','No. HP','Alamat Rumah/Kantor','No. KTP/NIK','Motor Terakhir','Total Kunjungan','Status','Catatan Blacklist'];
+  ws.columns = [{width:5},{width:14},{width:26},{width:24},{width:18},{width:36},{width:20},{width:20},{width:16},{width:14},{width:28}];
+  xjAddHeader(ws, 'DATABASE KONSUMEN', 11);
+  xjAddColHeaders(ws, 5, h);
+  xjAddDataRows(ws, 6, buildRowsDatabase(unik), true);
+  ws.views = [{state:'frozen',ySplit:5}];
+  await xjDownload(wb, 'Database_Konsumen_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.xlsx');
   showToast('Database konsumen berhasil diunduh');
 }
+
 function toggleLapPeriod(){
   const t = document.getElementById('lap-period-type').value;
   document.getElementById('lap-tgl-group').style.display = t==='harian'?'flex':'none';
@@ -3631,9 +3712,17 @@ function toggleLapPeriod(){
   document.getElementById('lap-bulan-group').style.display = t==='bulanan'?'flex':'none';
 }
 function downloadFiltered(){
+  // wrapper — dioverride di bawah
+}
+
+
+
+// ===== OVERRIDE downloadFiltered — ExcelJS 3 Sheet =====
+downloadFiltered = async function(){
   const periodType = document.getElementById('lap-period-type').value;
   const sts = document.getElementById('lap-status').value;
   let data = [...pesanan];
+
   if(periodType === 'harian'){
     const tgl = document.getElementById('lap-tanggal').value;
     if(tgl) data = data.filter(p => (p.mulai||'').startsWith(tgl) || (p.waktu||'').startsWith(tgl));
@@ -3653,650 +3742,133 @@ function downloadFiltered(){
     }
   } else if(periodType === 'bulanan'){
     const bln = document.getElementById('lap-bulan').value;
-    if(bln){data=data.filter(p=>{const tglMulai=(p.mulai||'').substring(0,7);let matchWaktu=false;if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d)){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');matchWaktu=(y+'-'+m)===bln;}else{const parts=p.waktu.split(',')[0].split('/');if(parts.length===3)matchWaktu=(parts[2]+'-'+parts[1].padStart(2,'0'))===bln;}}return matchWaktu||tglMulai===bln;});}
+    if(bln){ data=data.filter(p=>{ const tglMulai=(p.mulai||'').substring(0,7); let matchWaktu=false; if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d)){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');matchWaktu=(y+'-'+m)===bln;}} return matchWaktu||tglMulai===bln; }); }
   }
   if(sts) data = data.filter(p=>p.status===sts);
   if(!data.length){showToast('Tidak ada data sesuai filter');return;}
-  const wb=XLSX.utils.book_new();
-  const wsDb=XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsDb,11);
-  XLSX.utils.sheet_add_json(wsDb,buildRowsDatabase(getKonsumenUnik(data)),{origin:{r:4,c:0}});
-  applyHeaderStyle(wsDb,4,11);
-  wsDb['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:35},{wch:18},{wch:18},{wch:14},{wch:12},{wch:25}];
-  XLSX.utils.book_append_sheet(wb,wsDb,'Database Konsumen');
-  const wsD=XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsD,21);
-  XLSX.utils.sheet_add_json(wsD,buildRows(data),{origin:{r:4,c:0}});
-  applyHeaderStyle(wsD,4,21);
-  wsD['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:12},{wch:30},{wch:12},{wch:25},{wch:20},{wch:14},{wch:10}];
-  XLSX.utils.book_append_sheet(wb,wsD,'Detail Transaksi');
-  const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
-  XLSX.writeFile(wb,'Laporan_RentalMotor_'+suffix+'.xlsx');showToast('Laporan 2 sheet berhasil diunduh');
-}
 
-// ===== BACKUP & RESTORE =====
-function backupData(){
-  const payload={pesanan,stokData,stokLog,exportedAt:new Date().toISOString(),version:'v6'};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Backup_RentalMotor_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.json';a.click();URL.revokeObjectURL(url);showToast('Backup berhasil diunduh');
-}
-async function restoreData(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async function(ev){
-    try{
-      const d=JSON.parse(ev.target.result);
-      if(!d.pesanan||!d.stokData){showToast('File backup tidak valid');return;}
-      if(!confirm('Data saat ini akan diganti. Lanjutkan?'))return;
-      pesanan=d.pesanan||[];
-      stokData=d.stokData||stokData;
-      stokLog=d.stokLog||[];
-      pengeluaran=d.pengeluaran||[];
-      saveAll();
-      // Bulk sync to Supabase
-      if(sb){
-        showToast('Menyinkronkan ke Supabase...');
-        try{
-          if(pesanan.length) await sb.from('pesanan').upsert(pesanan, {onConflict:'id'});
-          if(stokData.length) await sb.from('stok').upsert(stokData, {onConflict:'id'});
-          if(pengeluaran.length) await sb.from('pengeluaran').upsert(pengeluaran, {onConflict:'id'});
-        }catch(e){ console.warn('Restore sync error:', e); }
+  const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian')
+    :periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan')
+    :(document.getElementById('lap-bulan').value||'semua');
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Rental Motor Tasikmalaya';
+  wb.created = new Date();
+
+  // === SHEET 1: DATABASE KONSUMEN ===
+  const ws1 = wb.addWorksheet('Database Konsumen');
+  const h1 = ['No','Jenis','Nama Lengkap','Nama Perusahaan','No. HP','Alamat Rumah/Kantor','No. KTP/NIK','Motor Terakhir','Total Kunjungan','Status','Catatan Blacklist'];
+  ws1.columns = [{width:5},{width:14},{width:26},{width:24},{width:18},{width:36},{width:20},{width:20},{width:16},{width:14},{width:28}];
+  xjAddHeader(ws1, 'DATABASE KONSUMEN', 11);
+  xjAddColHeaders(ws1, 5, h1);
+  const unik = getKonsumenUnik(data);
+  const db = buildRowsDatabase(unik);
+  xjAddDataRows(ws1, 6, db, true);
+  db.forEach((row, i) => {
+    if(row[9]==='BLACKLIST'){
+      const r = ws1.getRow(6+i);
+      for(let c=1;c<=11;c++){
+        r.getCell(c).fill={type:'pattern',pattern:'solid',fgColor:WARNA_MERAH};
+        r.getCell(c).font={size:10,bold:true,color:WARNA_PUTIH};
       }
-      buildMotorDropdown();renderDashboard();showToast('Data berhasil dipulihkan & disinkronkan');
-    }catch(e){showToast('Gagal membaca file backup');}
-  };
-  reader.readAsText(file);e.target.value='';
-}
-async function resetSemuaData(){
-  if(!confirm('HAPUS SEMUA DATA? Pastikan sudah backup!\n\nPesanan & log akan dihapus.'))return;
-  if(!confirm('Yakin? Ini tidak bisa dibatalkan.'))return;
-  pesanan=[];stokLog=[];pengeluaran=[];
-  stokData=[
-    {id:'beat',name:'Honda Beat',harga:100000,total:10,avail:10},
-    {id:'vario125',name:'Honda Vario 125',harga:120000,total:8,avail:8},
-    {id:'vario160',name:'Honda Vario 160',harga:150000,total:7,avail:7},
-    {id:'nmax',name:'Yamaha NMAX',harga:175000,total:6,avail:6},
-    {id:'vespa',name:'Vespa Matic',harga:200000,total:4,avail:4}
-  ];
-  saveAll();
-  // Reset Supabase tables
-  if(sb){
-    try{
-      await sb.from('pesanan').delete().neq('id',0);
-      await sb.from('pengeluaran').delete().neq('id',0);
-      await sb.from('stok_log').delete().neq('id',0);
-      await sb.from('stok').upsert(stokData, {onConflict:'id'});
-    }catch(e){ console.warn('Reset Supabase error:', e); }
-  }
-  buildMotorDropdown();renderDashboard();renderLaporan();showToast('Semua data berhasil direset');
-}
-
-// ===== PENGELUARAN =====
-let pengBuktiData = null;
-
-function handlePengBuktiUpload(e){
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    // Kompres otomatis: max 900px, quality 0.55 — cukup terbaca untuk nota/struk
-    compressImage(ev.target.result, 900, 0.55, function(compressed){
-      pengBuktiData = compressed;
-      document.getElementById('peng-bukti-preview').src = compressed;
-      document.getElementById('peng-bukti-preview').classList.add('show');
-      document.getElementById('peng-bukti-text').textContent = file.name + ' (terkompresi)';
-      document.getElementById('peng-bukti-area').style.borderColor = 'var(--green)';
-    });
-  };
-  reader.readAsDataURL(file);
-}
-
-function resetFormPengeluaran(){
-  document.getElementById('peng-tgl').value = '';
-  document.getElementById('peng-kat').value = 'Servis';
-  document.getElementById('peng-jumlah').value = '';
-  document.getElementById('peng-ket').value = '';
-  document.getElementById('peng-bukti-file').value = '';
-  document.getElementById('peng-bukti-preview').classList.remove('show');
-  document.getElementById('peng-bukti-text').textContent = 'Upload foto nota / struk / screenshot...';
-  document.getElementById('peng-bukti-area').style.borderColor = '';
-  pengBuktiData = null;
-}
-
-async function tambahPengeluaran(){
-  const tgl = document.getElementById('peng-tgl').value;
-  const kat = document.getElementById('peng-kat').value;
-  const jumlah = parseInt(document.getElementById('peng-jumlah').value)||0;
-  const ket = document.getElementById('peng-ket').value.trim();
-  if(!tgl){showToast('Tanggal wajib diisi');return;}
-  if(!jumlah||jumlah<=0){showToast('Jumlah pengeluaran tidak valid');return;}
-  // Upload bukti ke Supabase Storage jika ada
-  let buktiUrl = null;
-  if(pengBuktiData){
-    const ts = Date.now();
-    buktiUrl = await uploadImg(pengBuktiData, 'bukti-pengeluaran', 'peng_'+ts);
-  }
-  const entry = {
-    id: Date.now(),
-    tgl, kat, jumlah, ket,
-    bukti: buktiUrl || null,
-    oleh: currentUser ? currentUser.name : 'Admin',
-    waktu: new Date().toISOString()
-  };
-  pengeluaran.unshift(entry);
-  saveAll();
-  await sbUpsertPengeluaran(entry);
-  resetFormPengeluaran();
-  renderPengeluaran();
-  updatePengRekapTop();
-  showToast('Pengeluaran berhasil dicatat');
-}
-
-async function hapusPengeluaran(id){
-  if(!confirm('Hapus data pengeluaran ini?')) return;
-  pengeluaran = pengeluaran.filter(p => p.id !== id);
-  saveAll();
-  await sbDeletePengeluaran(id);
-  renderPengeluaran();
-  updatePengRekapTop();
-  showToast('Pengeluaran dihapus');
-}
-
-async function lihatBuktiPengeluaran(id){
-  const p = pengeluaran.find(x => x.id === id);
-  if(!p || !p.bukti){showToast('Tidak ada bukti untuk entri ini');return;}
-  showToast('Membuka bukti...');
-  const url = await getSignedUrl(p.bukti, 60);
-  if(!url){showToast('Gagal memuat bukti, coba lagi');return;}
-  const w = window.open('','_blank','width=700,height=600');
-  const buktiHtml = '<html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#111;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh\"><button onclick=\"window.history.back()\" style=\"position:fixed;top:12px;left:12px;padding:8px 16px;background:#fff;color:#111;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999\">← Kembali</button><img src=\"'+url+'\" style=\"max-width:100%;max-height:90vh;border-radius:8px;margin-top:48px\"><p style=\"position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#666;font-size:11px;font-family:sans-serif\">Link expired dalam 60 detik</p></body></html>';
-  const buktiBlob = new Blob([buktiHtml], {type:'text/html'});
-  const buktiBlobUrl = URL.createObjectURL(buktiBlob);
-  window.open(buktiBlobUrl, '_blank');
-  setTimeout(()=>URL.revokeObjectURL(buktiBlobUrl), 65000);
-}
-
-function updatePengRekapTop(){
-  const totalPend = pesanan.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
-  const totalPeng = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
-  document.getElementById('peng-pendapatan').textContent = rp(totalPend);
-  document.getElementById('peng-pendapatan-sub').textContent = 'Dari '+pesanan.filter(p=>p.status!=='Dibatalkan').length+' transaksi';
-  document.getElementById('peng-total').textContent = rp(totalPeng);
-  document.getElementById('peng-total-sub').textContent = pengeluaran.length+' entri';
-  const laba = totalPend - totalPeng;
-  document.getElementById('peng-laba').textContent = rp(laba);
-  document.getElementById('peng-laba').style.color = laba >= 0 ? 'var(--blue)' : 'var(--red)';
-}
-
-function renderPengeluaran(){
-  updatePengRekapTop();
-  const fkat = document.getElementById('peng-filter-kat').value;
-  let data = [...pengeluaran];
-  if(fkat) data = data.filter(p => p.kat === fkat || p.kat === fkat.replace('Servis Motor','Servis'));
-  const tb = document.getElementById('tbl-pengeluaran');
-  if(!data.length){
-    tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="empty-text">Belum ada data pengeluaran</div></div></td></tr>';
-    return;
-  }
-  const katLabel = {Servis:'Servis Motor',Bensin:'Bensin Antar',Administrasi:'Administrasi',Gaji:'Gaji / Insentif',Lainnya:'Lainnya'};
-  const katPill = {Servis:'pill-blue',Bensin:'pill-amber',Administrasi:'pill-gray',Gaji:'pill-green',Lainnya:'pill-gray'};
-  tb.innerHTML = [...data].reverse().map((p,i)=>`
-    <tr>
-      <td style="color:var(--text3);font-size:11px;font-family:'JetBrains Mono',monospace">${i+1}</td>
-      <td style="font-size:12px">${formatTgl(p.tgl)}</td>
-      <td><span class="pill ${katPill[p.kat]||'pill-gray'}">${katLabel[p.kat]||p.kat}</span></td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.ket||'—'}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--red)">${rp(p.jumlah)}</td>
-      <td>${p.bukti
-        ? `<button class="btn btn-ghost btn-sm" onclick="lihatBuktiPengeluaran(${p.id})" title="Lihat bukti">
-             <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-             Lihat
-           </button>`
-        : '<span style="color:var(--text3);font-size:11px">—</span>'
-      }</td>
-      <td style="color:var(--text3);font-size:11px">${p.oleh||'Admin'}</td>
-      <td><button class="btn btn-sm" style="background:var(--red-soft);color:var(--red);border:none" onclick="hapusPengeluaran(${p.id})">Hapus</button></td>
-    </tr>
-  `).join('');
-}
-
-// ===== AUTOCOMPLETE PELANGGAN =====
-let acFocusIdx = -1;
-
-function acGetKonsumen(){
-  // Deduplicate by HP, get latest data per person
-  const map = {};
-  pesanan.forEach(p => {
-    const key = p.ktpNo || p.hp;
-    if(!key) return;
-    if(!map[key] || p.waktu > map[key].waktu){
-      map[key] = {
-        nama: p.nama,
-        hp: p.hp,
-        alamatRumah: p.alamatRumah || '',
-        jenisPenyewa: p.jenisPenyewa || 'perorangan',
-        namaPerusahaan: p.namaPerusahaan || '',
-        ktpNo: p.ktpNo || '',
-        ktpImg: getKtpImg(p) || null,
-        blacklist: p.blacklist || false,
-        catatanBl: p.catatanBlacklist || '',
-        count: 0,
-        waktu: p.waktu || ''
-      };
     }
-    map[key].count++;
   });
-  return Object.values(map);
-}
+  ws1.views = [{state:'frozen',ySplit:5}];
 
-function acHighlight(text, q){
-  if(!q) return text;
-  const idx = text.toLowerCase().indexOf(q.toLowerCase());
-  if(idx < 0) return text;
-  return text.slice(0,idx) + '<mark>' + text.slice(idx, idx+q.length) + '</mark>' + text.slice(idx+q.length);
-}
-
-function acSearch(q){
-  const dd = document.getElementById('ac-dropdown');
-  acFocusIdx = -1;
-  const trimQ = (q||'').trim();
-
-  const all = acGetKonsumen();
-  let results = all;
-  if(trimQ){
-    results = all.filter(k =>
-      k.nama.toLowerCase().includes(trimQ.toLowerCase()) ||
-      k.hp.includes(trimQ) ||
-      (k.namaPerusahaan||'').toLowerCase().includes(trimQ.toLowerCase())
-    );
-  }
-  // Limit to 6, sort: exact-start match first, then by recency
-  results.sort((a,b)=>{
-    const aq = a.nama.toLowerCase().startsWith(trimQ.toLowerCase()) ? 0 : 1;
-    const bq = b.nama.toLowerCase().startsWith(trimQ.toLowerCase()) ? 0 : 1;
-    return aq - bq || b.count - a.count;
-  });
-  results = results.slice(0, 6);
-
-  if(!results.length && trimQ){
-    dd.innerHTML = `<div class="ac-empty">Tidak ada pelanggan cocok dengan "${trimQ}"</div>`;
-    dd.classList.add('show');
-    return;
-  }
-  if(!results.length){
-    dd.classList.remove('show');
-    return;
-  }
-
-  dd.innerHTML = results.map((k, i) => {
-    const initials = k.nama.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-    const displayName = k.jenisPenyewa==='perusahaan' && k.namaPerusahaan
-      ? `${acHighlight(k.namaPerusahaan, trimQ)} <span style="font-weight:400;color:var(--text3);font-size:11px">(${acHighlight(k.nama, trimQ)})</span>`
-      : acHighlight(k.nama, trimQ);
-    const meta = [k.hp, k.alamatRumah].filter(Boolean).join(' · ');
-    const badge = k.blacklist
-      ? `<span class="ac-badge bl">Blacklist</span>`
-      : `<span class="ac-badge">${k.count}x sewa</span>`;
-    return `<div class="ac-item" data-idx="${i}" onmousedown="acSelect(${i})" onmouseover="acHover(${i})">
-      <div class="ac-avatar">${initials}</div>
-      <div class="ac-info">
-        <div class="ac-name">${displayName}</div>
-        <div class="ac-meta">${meta}</div>
-      </div>
-      ${badge}
-    </div>`;
-  }).join('');
-
-  // Store results on dropdown for selection
-  dd._results = results;
-  dd.classList.add('show');
-}
-
-function acHover(i){
-  acFocusIdx = i;
-  document.querySelectorAll('#ac-dropdown .ac-item').forEach((el,j)=>el.classList.toggle('focused', j===i));
-}
-
-function acKeyNav(e){
-  const dd = document.getElementById('ac-dropdown');
-  const items = dd.querySelectorAll('.ac-item');
-  if(!dd.classList.contains('show')) return;
-  if(e.key === 'ArrowDown'){
-    e.preventDefault();
-    acFocusIdx = Math.min(acFocusIdx+1, items.length-1);
-    items.forEach((el,j)=>el.classList.toggle('focused', j===acFocusIdx));
-    if(items[acFocusIdx]) items[acFocusIdx].scrollIntoView({block:'nearest'});
-  } else if(e.key === 'ArrowUp'){
-    e.preventDefault();
-    acFocusIdx = Math.max(acFocusIdx-1, 0);
-    items.forEach((el,j)=>el.classList.toggle('focused', j===acFocusIdx));
-    if(items[acFocusIdx]) items[acFocusIdx].scrollIntoView({block:'nearest'});
-  } else if(e.key === 'Enter'){
-    if(acFocusIdx >= 0) { e.preventDefault(); acSelect(acFocusIdx); }
-  } else if(e.key === 'Escape'){
-    acClose();
-  }
-}
-
-function acSelect(i){
-  const dd = document.getElementById('ac-dropdown');
-  const k = (dd._results||[])[i];
-  if(!k) return;
-
-  // Fill all fields
-  document.getElementById('new-nama').value = k.nama;
-  document.getElementById('new-hp').value = k.hp;
-  if(k.alamatRumah) document.getElementById('new-alamat-rumah').value = k.alamatRumah;
-
-  // Jenis penyewa
-  setJenisPenyewa(k.jenisPenyewa || 'perorangan');
-  if(k.jenisPenyewa === 'perusahaan' && k.namaPerusahaan){
-    document.getElementById('new-perusahaan').value = k.namaPerusahaan;
-  }
-
-  // KTP number
-  if(k.ktpNo) document.getElementById('new-ktp-no').value = k.ktpNo;
-
-  // KTP image — ambil dari ktpImgUrl via signed URL (bucket private)
-  const ktpImgStored = pesanan.filter(p=>(p.ktpNo&&p.ktpNo===k.ktpNo)||(p.hp===k.hp)).map(p=>p.ktpImgUrl).find(Boolean);
-  if(ktpImgStored){
-    newKTPData = ktpImgStored; // simpan path/base64 untuk dipakai saat simpan
-    document.getElementById('ktp-upload-text').textContent = 'KTP tersimpan — ganti jika perlu';
-    document.getElementById('ktp-upload-area-new').style.borderColor = 'var(--green)';
-    const fg = document.getElementById('fg-ktp-file');
-    fg.classList.remove('has-error');
-    // Load preview via signed URL (non-blocking)
-    getSignedUrl(ktpImgStored, 120).then(url=>{
-      if(url){
-        const prev = document.getElementById('new-ktp-preview');
-        prev.src = url;
-        prev.classList.add('show');
-      }
+  // === SHEET 2: DETAIL TRANSAKSI ===
+  const ws2 = wb.addWorksheet('Detail Transaksi');
+  const h2 = ['No','Jenis','Nama','Perusahaan','No HP','Alamat Rumah','No KTP','Motor','Tgl Mulai','Tgl Selesai','Durasi (hari)','Total Harga','Denda','Metode Bayar','Antar Jemput','Alamat Antar','Status','Catatan','Waktu Input','Dicatat Oleh','Blacklist'];
+  ws2.columns = [{width:5},{width:14},{width:24},{width:22},{width:16},{width:30},{width:20},{width:20},{width:14},{width:14},{width:14},{width:16},{width:14},{width:16},{width:14},{width:30},{width:12},{width:26},{width:22},{width:16},{width:10}];
+  xjAddHeader(ws2, 'DETAIL TRANSAKSI', 21);
+  xjAddColHeaders(ws2, 5, h2);
+  const det = buildRows(data);
+  xjAddDataRows(ws2, 6, det, true);
+  det.forEach((row, i) => {
+    const r = ws2.getRow(6+i);
+    [12,13].forEach(c => {
+      const cell = r.getCell(c);
+      cell.numFmt = '"Rp"#,##0';
+      cell.alignment = {horizontal:'right', vertical:'middle'};
     });
-  }
-
-  acClose();
-  showToast('Data ' + k.nama + ' berhasil diisi otomatis');
-  // Focus next empty field
-  setTimeout(()=>document.getElementById('new-motor').focus(), 100);
-}
-
-function acClose(){
-  const dd = document.getElementById('ac-dropdown');
-  dd.classList.remove('show');
-  acFocusIdx = -1;
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e){
-  if(!e.target.closest('.ac-wrap')) acClose();
-});
-
-
-// ===== FORMAT JAM INPUT 24H =====
-function formatJamInput(el){
-  let v = el.value.replace(/[^0-9]/g,'');
-  if(v.length >= 3) v = v.slice(0,2) + ':' + v.slice(2,4);
-  el.value = v;
-  // validate
-  const match = el.value.match(/^([01]?[0-9]|2[0-3]):([0-5][0-9])$/);
-  el.style.borderColor = (el.value.length===5 && match) ? '' : (el.value.length>=5 ? 'var(--red)' : '');
-}
-
-// ===== TOAST =====
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
-
-// ===== SETTINGS DENDA =====
-let DENDA_PER_MOTOR = JSON.parse(localStorage.getItem('rm_denda_per_motor')||'{}');
-
-function getDendaMotor(motorName){
-  return DENDA_PER_MOTOR[motorName] !== undefined ? DENDA_PER_MOTOR[motorName] : DENDA_PER_JAM;
-}
-
-function previewDenda(val){
-  const n=parseInt(val)||0;
-  const el=document.getElementById('denda-current');
-  if(el) el.textContent=rp(n)+'/jam';
-}
-function saveDenda(){
-  const val=parseInt(document.getElementById('setting-denda').value)||0;
-  if(val<0){showToast('Denda tidak boleh minus');return;}
-  DENDA_PER_JAM=val;
-  localStorage.setItem('rm_denda_perjam',val);
-  showToast('Denda default diperbarui: '+rp(val)+'/jam');
-  renderDashboard();
-}
-function renderDendaPerMotor(){
-  const list=document.getElementById('denda-per-motor-list');
-  if(!list) return;
-  list.innerHTML=stokData.map(m=>{
-    const val=DENDA_PER_MOTOR[m.name]!==undefined?DENDA_PER_MOTOR[m.name]:'';
-    return`<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <span style="min-width:160px;font-size:13px;font-weight:500">${m.name}</span>
-      <input type="number" min="0" placeholder="${rp(DENDA_PER_JAM)}/jam (default)"
-        value="${val}"
-        data-motor="${m.name}"
-        style="flex:1;min-width:160px;height:36px;border:1px solid var(--border);border-radius:var(--radius);padding:0 10px;font-size:13px;background:var(--bg2);color:var(--text1)">
-      <span style="font-size:12px;color:var(--text3);min-width:80px">${val?rp(val)+'/jam':'pakai default'}</span>
-    </div>`;
-  }).join('');
-}
-function saveDendaPerMotor(){
-  const inputs=document.querySelectorAll('#denda-per-motor-list input[data-motor]');
-  inputs.forEach(inp=>{
-    const motor=inp.dataset.motor;
-    const val=inp.value.trim();
-    if(val==='') delete DENDA_PER_MOTOR[motor];
-    else DENDA_PER_MOTOR[motor]=parseInt(val)||0;
+    const statusCell = r.getCell(17);
+    if(statusCell.value==='Aktif') statusCell.font={size:10,bold:true,color:{argb:'FF166534'}};
+    else if(statusCell.value==='Dibatalkan') statusCell.font={size:10,bold:true,color:WARNA_MERAH};
+    else if(statusCell.value==='Selesai') statusCell.font={size:10,color:{argb:'FF2563EB'}};
   });
-  localStorage.setItem('rm_denda_per_motor',JSON.stringify(DENDA_PER_MOTOR));
-  showToast('Denda per motor berhasil disimpan');
-  renderDendaPerMotor();
-  renderDashboard();
-}
-function initDendaUI(){
-  const el=document.getElementById('setting-denda');
-  if(el){ el.value=DENDA_PER_JAM; previewDenda(DENDA_PER_JAM); }
-  renderDendaPerMotor();
-}
+  ws2.views = [{state:'frozen',ySplit:5}];
 
-// ===== NOTIF H-1 (blast WA manual ke yang jatuh tempo besok) =====
-function kirimNotifH1(){
-  const besok = new Date();
-  besok.setDate(besok.getDate() + 1);
-  const besokStr = besok.getFullYear() + '-' + String(besok.getMonth()+1).padStart(2,'0') + '-' + String(besok.getDate()).padStart(2,'0');
-  const targets = pesanan.filter(p => p.status === 'Aktif' && p.selesai && p.selesai.startsWith(besokStr));
-  if(!targets.length){
-    showToast('Tidak ada pesanan yang jatuh tempo besok.');
-    return;
-  }
-  let sent = 0;
-  targets.forEach(p => {
-    const jamKembali = p.jamSelesai || '08:00';
-    const msg = encodeURIComponent(
-      `Halo *${p.nama.split(' ')[0]}* 👋\n\n` +
-      `Reminder dari *Rental Motor Tasikmalaya* — motor *${p.motor}* yang Anda sewa dijadwalkan kembali besok:\n\n` +
-      `📅 Tanggal: *${formatTgl(p.selesai)}*\n` +
-      `🕐 Jam: *${jamKembali} WIB*\n\n` +
-      `Mohon kembalikan motor tepat waktu ya 🙏\n` +
-      `Keterlambatan dikenakan denda per jam.\n\n` +
-      `Terima kasih & salam — Rental Motor Tasikmalaya`
-    );
-    const hp = p.hp.replace(/^0/, '62');
-    setTimeout(() => window.open(`https://wa.me/${hp}?text=${msg}`, '_blank'), sent * 800);
-    sent++;
-  });
-  showToast(`Membuka WA untuk ${targets.length} pelanggan jatuh tempo besok...`);
-}
+  // === SHEET 3: LAPORAN OPERASIONAL ===
+  const ws3 = wb.addWorksheet('Laporan Operasional');
+  ws3.columns = [{width:32},{width:40},{width:22}];
+  xjAddHeader(ws3, 'LAPORAN OPERASIONAL', 3);
 
-// ===== REKAP HARIAN WA KE PEMILIK =====
-const NOMOR_PEMILIK = '6289524279736'; // Ganti dengan nomor HP pemilik (format 62xxx)
-function kirimRekapHarian(){
-  const now = new Date();
-  const todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  const hariIni = pesanan.filter(p => {
-    if(p.mulai && p.mulai.startsWith(todayStr)) return true;
-    if(p.waktu){ const d=new Date(p.waktu); if(!isNaN(d)) return d.toDateString()===now.toDateString(); }
-    return false;
-  });
-  const aktif = pesanan.filter(p => p.status === 'Aktif').length;
-  const totalPend = hariIni.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
-  const terlambat = pesanan.filter(p => isTerlambat(p));
-  const totalUnit = stokData.reduce((a,b)=>a+b.total,0);
-  const tersedia = Math.max(0, totalUnit - aktif);
+  // Header kolom
+  xjAddColHeaders(ws3, 5, ['KATEGORI','KETERANGAN','JUMLAH (Rp)']);
 
-  const tgl = now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  let msg = `📊 *REKAP HARIAN — Rental Motor Tasikmalaya*\n`;
-  msg += `${tgl}\n`;
-  msg += `————————————————\n`;
-  msg += `🏍️ Motor tersewa: *${aktif}* dari ${totalUnit} unit (${tersedia} tersedia)\n`;
-  msg += `📋 Pesanan masuk hari ini: *${hariIni.length}*\n`;
-  msg += `💰 Pendapatan hari ini: *${rp(totalPend)}*\n`;
-  if(terlambat.length){
-    msg += `⚠️ Terlambat: *${terlambat.length} pesanan*\n`;
-    terlambat.forEach(p => { msg += `   - ${p.nama} (${p.motor})\n`; });
-  } else {
-    msg += `✅ Tidak ada keterlambatan\n`;
-  }
-
-  // Jatuh tempo hari ini & besok
-  const besok = new Date(); besok.setDate(besok.getDate()+1);
-  const besokStr = besok.getFullYear()+'-'+String(besok.getMonth()+1).padStart(2,'0')+'-'+String(besok.getDate()).padStart(2,'0');
-  const jatuhHariIni = pesanan.filter(p => p.status==='Aktif' && p.selesai && p.selesai.startsWith(todayStr));
-  const jatuhBesok   = pesanan.filter(p => p.status==='Aktif' && p.selesai && p.selesai.startsWith(besokStr));
-  if(jatuhHariIni.length) msg += `📌 Kembali hari ini: *${jatuhHariIni.map(p=>p.nama).join(', ')}*\n`;
-  if(jatuhBesok.length)   msg += `📌 Kembali besok: *${jatuhBesok.map(p=>p.nama).join(', ')}*\n`;
-  msg += `————————————————\n`;
-  msg += `_Dikirim otomatis via Dashboard_`;
-
-  window.open(`https://wa.me/${NOMOR_PEMILIK}?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-// Auto-refresh countdown setiap 1 menit — fix: simpan ID, clear sebelum set ulang
-let _dashRefreshInterval = null;
-function startDashInterval(){
-  if(_dashRefreshInterval) clearInterval(_dashRefreshInterval);
-  _dashRefreshInterval = setInterval(()=>{
-    try {
-      const dashPage = document.getElementById('page-dashboard');
-      if(dashPage && dashPage.classList.contains('active')) renderDashboard();
-    } catch(e){ console.error('[interval renderDashboard error]', e); }
-  }, 60000);
-}
-startDashInterval();
-
-// ===== INIT =====
-// buildMotorDropdown() dan renderDashboard() dipanggil di dalam auth check
-
-
-// ===== PATCH v21: Sheet Laporan Operasional Gabungan =====
-
-function buildRowsOperasional(penjualanData){
-  // Pendapatan per motor
+  // Hitung data operasional
   const motorStats = {};
-  stokData.forEach(m => { motorStats[m.name] = {unit:m.name, cnt:0, pendapatan:0, dp:0, sisa:0}; });
-  penjualanData.filter(p=>p.status!=='Dibatalkan').forEach(p=>{
-    if(!motorStats[p.motor]) motorStats[p.motor]={unit:p.motor,cnt:0,pendapatan:0,dp:0,sisa:0};
+  stokData.forEach(m => { motorStats[m.name]={unit:m.name,cnt:0,pendapatan:0,denda:0}; });
+  data.filter(p=>p.status!=='Dibatalkan').forEach(p=>{
+    if(!motorStats[p.motor]) motorStats[p.motor]={unit:p.motor,cnt:0,pendapatan:0,denda:0};
     motorStats[p.motor].cnt++;
     motorStats[p.motor].pendapatan += p.total||0;
-    motorStats[p.motor].dp += p.dp||0;
-    motorStats[p.motor].sisa += Math.max(0,(p.total||0)-(p.dp||0));
+    motorStats[p.motor].denda += p.dendaDibayar||0;
   });
+  const totalSewa = data.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
+  const totalDenda = data.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.dendaDibayar||0),0);
+  const totalPend = totalSewa + totalDenda;
+  const totalPeng = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
+  const laba = totalPend - totalPeng;
 
-  const totalPendapatan = penjualanData.filter(p=>p.status!=='Dibatalkan').reduce((a,b)=>a+(b.total||0),0);
-  const totalPengeluaran = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
-  const labaBersih = totalPendapatan - totalPengeluaran;
+  let rowNum = 6;
+  const addSectionHeader = (label) => {
+    ws3.mergeCells(rowNum,1,rowNum,3);
+    const cell = ws3.getCell(rowNum,1);
+    cell.value = label;
+    cell.font={bold:true,size:10,color:WARNA_PUTIH};
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E40AF'}};
+    cell.alignment={horizontal:'left',vertical:'middle'};
+    ws3.getRow(rowNum).height=20;
+    rowNum++;
+  };
+  const addRow = (kat, ket, jumlah, isBold, bgColor) => {
+    const r = ws3.getRow(rowNum);
+    r.height=18;
+    const c1=r.getCell(1); c1.value=kat; c1.border=xjBorderThin(); c1.font={size:10,bold:isBold}; c1.alignment={vertical:'middle'};
+    const c2=r.getCell(2); c2.value=ket; c2.border=xjBorderThin(); c2.font={size:10,bold:isBold}; c2.alignment={vertical:'middle'};
+    const c3=r.getCell(3); c3.value=jumlah; c3.border=xjBorderThin(); c3.font={size:10,bold:isBold,color:isBold?{argb:'FF166534'}:WARNA_TEKS}; c3.numFmt='"Rp"#,##0'; c3.alignment={horizontal:'right',vertical:'middle'};
+    if(bgColor){ [c1,c2,c3].forEach(c=>c.fill={type:'pattern',pattern:'solid',fgColor:{argb:bgColor}}); }
+    else { [c1,c2,c3].forEach((c,i)=>c.fill={type:'pattern',pattern:'solid',fgColor:rowNum%2===0?WARNA_ABU:WARNA_PUTIH}); }
+    rowNum++;
+  };
 
-  const rows = [];
-
-  rows.push({'KATEGORI':'=== PENDAPATAN PENJUALAN ===','KETERANGAN':'','JUMLAH (Rp)':''});
+  addSectionHeader('PENDAPATAN PENJUALAN');
   Object.values(motorStats).forEach(m=>{
-    rows.push({'KATEGORI':'Pendapatan','KETERANGAN':m.unit+' ('+m.cnt+' transaksi)','JUMLAH (Rp)':m.pendapatan});
+    addRow('Sewa', m.unit+' ('+m.cnt+' transaksi)', m.pendapatan, false, null);
+    if(m.denda>0) addRow('Denda', m.unit, m.denda, false, null);
   });
-  rows.push({'KATEGORI':'TOTAL PENDAPATAN','KETERANGAN':'','JUMLAH (Rp)':totalPendapatan});
-  rows.push({'KATEGORI':'','KETERANGAN':'','JUMLAH (Rp)':''});
+  if(totalDenda>0) addRow('Total Denda Keterlambatan','',totalDenda,false,'FFFEF9C3');
+  addRow('TOTAL PENDAPATAN (Sewa + Denda)','',totalPend,true,'FFDCFCE7');
 
-  rows.push({'KATEGORI':'=== PENGELUARAN OPERASIONAL ===','KETERANGAN':'','JUMLAH (Rp)':''});
+  rowNum++; // baris kosong
+  addSectionHeader('PENGELUARAN OPERASIONAL');
   if(pengeluaran.length){
-    const katMap = {};
-    pengeluaran.forEach(p=>{ if(!katMap[p.kat]) katMap[p.kat]=0; katMap[p.kat]+=p.jumlah||0; });
-    Object.entries(katMap).forEach(([k,v])=>{
-      rows.push({'KATEGORI':'Pengeluaran','KETERANGAN':k,'JUMLAH (Rp)':v});
-    });
+    const katMap={};
+    pengeluaran.forEach(p=>{ if(!katMap[p.kat])katMap[p.kat]=0; katMap[p.kat]+=p.jumlah||0; });
+    Object.entries(katMap).forEach(([k,v])=>addRow('Pengeluaran',k,v,false,null));
   } else {
-    rows.push({'KATEGORI':'Pengeluaran','KETERANGAN':'Belum ada pengeluaran dicatat','JUMLAH (Rp)':0});
+    addRow('Pengeluaran','Belum ada pengeluaran dicatat',0,false,null);
   }
-  rows.push({'KATEGORI':'TOTAL PENGELUARAN','KETERANGAN':'','JUMLAH (Rp)':totalPengeluaran});
-  rows.push({'KATEGORI':'','KETERANGAN':'','JUMLAH (Rp)':''});
-  rows.push({'KATEGORI':'LABA BERSIH','KETERANGAN':'Pendapatan − Pengeluaran','JUMLAH (Rp)':labaBersih});
+  addRow('TOTAL PENGELUARAN','',totalPeng,true,'FFFEE2E2');
 
-  return rows;
-}
+  rowNum++;
+  const labaRow = ws3.getRow(rowNum);
+  labaRow.height=24;
+  ws3.mergeCells(rowNum,1,rowNum,2);
+  const labaC1=labaRow.getCell(1); labaC1.value='LABA BERSIH'; labaC1.font={bold:true,size:12,color:laba>=0?{argb:'FF166534'}:WARNA_MERAH}; labaC1.fill={type:'pattern',pattern:'solid',fgColor:laba>=0?WARNA_HIJAU_L:{argb:'FFFEE2E2'}}; labaC1.border=xjBorderAll(false); labaC1.alignment={vertical:'middle'};
+  const labaC3=labaRow.getCell(3); labaC3.value=laba; labaC3.font={bold:true,size:12,color:laba>=0?{argb:'FF166534'}:WARNA_MERAH}; labaC3.fill={type:'pattern',pattern:'solid',fgColor:laba>=0?WARNA_HIJAU_L:{argb:'FFFEE2E2'}}; labaC3.numFmt='"Rp"#,##0'; labaC3.border=xjBorderAll(false); labaC3.alignment={horizontal:'right',vertical:'middle'};
 
-// Override downloadFiltered untuk 3 sheet
-// Override downloadFiltered
-downloadFiltered = function(){
-  const periodType = document.getElementById('lap-period-type').value;
-  const sts = document.getElementById('lap-status').value;
-  let data = [...pesanan];
-  if(periodType === 'harian'){
-    const tgl = document.getElementById('lap-tanggal').value;
-    if(tgl) data = data.filter(p => (p.mulai||'').startsWith(tgl) || (p.waktu||'').startsWith(tgl));
-  } else if(periodType === 'mingguan'){
-    const wk = document.getElementById('lap-minggu').value;
-    if(wk){
-      const [yr,wn] = wk.split('-W');
-      data = data.filter(p=>{
-        const d = parseWaktu(p);
-        const jan4 = new Date(parseInt(yr),0,4);
-        const weekStart = new Date(jan4);
-        weekStart.setDate(jan4.getDate() - (jan4.getDay()||7) + 1 + (parseInt(wn)-1)*7);
-        weekStart.setHours(0,0,0,0);
-        const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
-        return d >= weekStart && d <= weekEnd;
-      });
-    }
-  } else if(periodType === 'bulanan'){
-    const bln = document.getElementById('lap-bulan').value;
-    if(bln){data=data.filter(p=>{const tglMulai=(p.mulai||'').substring(0,7);let matchWaktu=false;if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d)){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');matchWaktu=(y+'-'+m)===bln;}}return matchWaktu||tglMulai===bln;});}
-  }
-  if(sts) data = data.filter(p=>p.status===sts);
-  if(!data.length){showToast('Tidak ada data sesuai filter');return;}
-
-  const wb = XLSX.utils.book_new();
-
-  // Sheet 1: Database Konsumen
-  const wsDb = XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsDb, 11);
-  XLSX.utils.sheet_add_json(wsDb, buildRowsDatabase(getKonsumenUnik(data)), {origin:{r:4,c:0}});
-  applyHeaderStyle(wsDb, 4, 11);
-  wsDb['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:35},{wch:18},{wch:18},{wch:14},{wch:12},{wch:25}];
-  XLSX.utils.book_append_sheet(wb, wsDb, 'Database Konsumen');
-
-  // Sheet 2: Detail Transaksi
-  const wsD = XLSX.utils.json_to_sheet([]);
-  addLaporanHeader(wsD, 21);
-  XLSX.utils.sheet_add_json(wsD, buildRows(data), {origin:{r:4,c:0}});
-  applyHeaderStyle(wsD, 4, 21);
-  wsD['!cols']=[{wch:4},{wch:14},{wch:22},{wch:22},{wch:16},{wch:30},{wch:18},{wch:18},{wch:12},{wch:12},{wch:14},{wch:16},{wch:14},{wch:16},{wch:12},{wch:30},{wch:12},{wch:25},{wch:20},{wch:14},{wch:10}];
-  XLSX.utils.book_append_sheet(wb, wsD, 'Detail Transaksi');
-
-  // Sheet 3: Laporan Operasional (BARU)
-  const wsOp = XLSX.utils.json_to_sheet([]);
-  XLSX.utils.sheet_add_aoa(wsOp, [
-    ['LAPORAN OPERASIONAL — Rental Motor Tasikmalaya'],
-    ['Digenerate: '+new Date().toLocaleString('id-ID')],
-    [''],
-  ]);
-  XLSX.utils.sheet_add_json(wsOp, buildRowsOperasional(data), {origin:{r:3,c:0}});
-  wsOp['!cols'] = [{wch:28},{wch:38},{wch:20}];
-  // Bold laba bersih row
-  const labaRowIdx = 3 + buildRowsOperasional(data).length - 1;
-  const labaCell = XLSX.utils.encode_cell({r:labaRowIdx, c:2});
-  if(wsOp[labaCell]) wsOp[labaCell].s = {font:{bold:true,color:{rgb:'16a34a'}},fill:{fgColor:{rgb:'dcfce7'}}};
-  XLSX.utils.book_append_sheet(wb, wsOp, 'Laporan Operasional');
-
-  const suffix = periodType==='harian'?(document.getElementById('lap-tanggal').value||'harian'):periodType==='mingguan'?(document.getElementById('lap-minggu').value||'mingguan'):(document.getElementById('lap-bulan').value||'semua');
-  XLSX.writeFile(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
+  await xjDownload(wb, 'Laporan_RentalMotor_'+suffix+'.xlsx');
   showToast('Laporan 3 sheet berhasil diunduh!');
 };
 </script>
