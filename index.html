@@ -1081,10 +1081,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <button class="period-tab" id="ptab-bulan" onclick="setPeriod('bulan',this)">Bulan Ini</button>
         <button class="period-tab" id="ptab-semua" onclick="setPeriod('semua',this)">Semua</button>
       </div>
-      <!-- Baris 1: Pendapatan, Pengeluaran, Laba Bersih (per periode) -->
-      <div class="rekap-period-row" style="grid-template-columns:repeat(3,1fr)">
+      <!-- Baris 1: 4 card kecil: Pendapatan Sewa, Pengeluaran, Rata-rata, Denda -->
+      <div class="rekap-period-row" style="grid-template-columns:repeat(4,1fr)">
         <div class="rekap-mini">
-          <div class="rekap-mini-label">Pendapatan</div>
+          <div class="rekap-mini-label">Pendapatan Sewa</div>
           <div class="rekap-mini-val" id="rek-period-pend" style="color:var(--green)">Rp 0</div>
           <div class="rekap-mini-sub" id="rek-period-pend-sub">0 transaksi</div>
         </div>
@@ -1093,36 +1093,28 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="rekap-mini-val" id="rek-period-peng" style="color:var(--red)">Rp 0</div>
           <div class="rekap-mini-sub" id="rek-period-peng-sub">periode ini</div>
         </div>
-        <div class="rekap-mini" id="rek-period-laba-card">
-          <div class="rekap-mini-label">Laba Bersih</div>
-          <div class="rekap-mini-val" id="rek-period-laba">Rp 0</div>
-          <div class="rekap-mini-sub" id="rek-period-label">periode ini</div>
-        </div>
-      </div>
-      <!-- Baris 2: Transaksi + Rata-rata -->
-      <div class="rekap-period-row" style="grid-template-columns:1fr 1fr;margin-top:-4px">
-        <div class="rekap-mini">
-          <div class="rekap-mini-label">Transaksi</div>
-          <div class="rekap-mini-val" id="rek-period-cnt">0</div>
-          <div class="rekap-mini-sub">jumlah pesanan</div>
-        </div>
         <div class="rekap-mini">
           <div class="rekap-mini-label">Rata-rata per Transaksi</div>
           <div class="rekap-mini-val" id="rek-period-avg">Rp 0</div>
-          <div class="rekap-mini-sub">rata-rata nilai sewa</div>
+          <div class="rekap-mini-sub" id="rek-period-cnt-sub">0 transaksi</div>
+        </div>
+        <div class="rekap-mini" style="border-color:var(--red)">
+          <div class="rekap-mini-label" style="color:var(--red)">Pendapatan Denda</div>
+          <div class="rekap-mini-val" id="rek-period-denda" style="color:var(--red)">Rp 0</div>
+          <div class="rekap-mini-sub" id="rek-period-denda-sub">0 kasus</div>
         </div>
       </div>
-      <!-- Baris 3: Total periode + Laba bersih periode -->
-      <div class="rekap-row">
-        <div class="rekap-card">
-          <div class="rekap-label" id="rek-total-label">Total Pendapatan</div>
-          <div class="rekap-val" id="rek-total" style="color:var(--green)">Rp 0</div>
-          <div class="rekap-sub" id="rek-total-sub">Dari 0 transaksi</div>
+      <!-- Baris 2: Transaksi + Laba Bersih besar -->
+      <div class="rekap-row" style="margin-top:-4px">
+        <div class="rekap-card" style="max-width:200px">
+          <div class="rekap-label">Transaksi</div>
+          <div class="rekap-val" id="rek-period-cnt" style="font-size:36px">0</div>
+          <div class="rekap-sub">jumlah pesanan</div>
         </div>
-        <div class="rekap-card">
+        <div class="rekap-card" id="rek-period-laba-card" style="flex:1;border-width:2px">
           <div class="rekap-label" id="rek-laba-total-label">Laba Bersih</div>
-          <div class="rekap-val" id="rek-laba-total">Rp 0</div>
-          <div class="rekap-sub" id="rek-laba-total-sub">Pendapatan − Pengeluaran</div>
+          <div class="rekap-val" id="rek-period-laba" style="font-size:40px">Rp 0</div>
+          <div class="rekap-sub" id="rek-laba-total-sub">Pendapatan Sewa + Denda − Pengeluaran</div>
         </div>
       </div>
       <div class="card" style="margin-bottom:16px">
@@ -2898,41 +2890,54 @@ function renderKeuangan(){
     }).reduce((a,b)=>a+(b.jumlah||0),0);
   })();
 
-  const periodLaba = periodPend - periodPeng;
+  // Laba Bersih = Sewa + Denda - Pengeluaran
+  const periodLaba = periodPendSewa + periodPendDenda - periodPeng;
+  const periodLabelsLong = {hari:'Hari Ini', minggu:'Minggu Ini', bulan:'Bulan Ini', semua:'Semua'};
+
+  // Card: Pendapatan Sewa
+  const _el_rek_period_pend=document.getElementById('rek-period-pend');
+  if(_el_rek_period_pend) _el_rek_period_pend.textContent = rp(periodPendSewa);
+  const _el_rek_period_pend_sub=document.getElementById('rek-period-pend-sub');
+  if(_el_rek_period_pend_sub) _el_rek_period_pend_sub.textContent = periodCnt+' transaksi';
+
+  // Card: Pengeluaran
+  const _el_rek_period_peng=document.getElementById('rek-period-peng');
+  if(_el_rek_period_peng) _el_rek_period_peng.textContent = rp(periodPeng);
+  const _el_rek_period_peng_sub=document.getElementById('rek-period-peng-sub');
+  if(_el_rek_period_peng_sub) _el_rek_period_peng_sub.textContent = periodLabels[_dashPeriod]||_dashPeriod;
+
+  // Card: Rata-rata per transaksi
+  const _el_rek_period_avg=document.getElementById('rek-period-avg');
+  if(_el_rek_period_avg) _el_rek_period_avg.textContent = periodCnt>0 ? rp(Math.round(periodPendSewa/periodCnt)) : 'Rp 0';
+  const _el_cnt_sub=document.getElementById('rek-period-cnt-sub');
+  if(_el_cnt_sub) _el_cnt_sub.textContent = periodCnt+' transaksi';
+
+  // Card: Pendapatan Denda
+  const _el_denda=document.getElementById('rek-period-denda');
+  if(_el_denda){ _el_denda.textContent=rp(periodPendDenda); _el_denda.style.color=periodPendDenda>0?'var(--red)':'var(--text3)'; }
+  const dendaKasus = riwayatDenda.filter(d=>{ const pd=periodData.find(p=>p.id===d.pesananId); return !!pd; }).length;
+  const _el_denda_sub=document.getElementById('rek-period-denda-sub');
+  if(_el_denda_sub) _el_denda_sub.textContent = dendaKasus+' kasus';
+
+  // Card: Transaksi
+  const _el_rek_period_cnt=document.getElementById('rek-period-cnt');
+  if(_el_rek_period_cnt) _el_rek_period_cnt.textContent = periodCnt;
+
+  // Card besar: Laba Bersih
   const labaCard = document.getElementById('rek-period-laba-card');
   const labaEl = document.getElementById('rek-period-laba');
-  labaEl.textContent = rp(Math.abs(periodLaba));
-  labaEl.style.color = periodLaba >= 0 ? 'var(--blue)' : 'var(--red)';
-  if(labaCard) labaCard.style.borderColor = periodLaba >= 0 ? '' : 'var(--red)';
-
-  const _el_rek_period_pend=document.getElementById('rek-period-pend');if(_el_rek_period_pend){_el_rek_period_pend.textContent = rp(periodPend);}
-  const _el_rek_period_pend_sub=document.getElementById('rek-period-pend-sub');if(_el_rek_period_pend_sub){
-    _el_rek_period_pend_sub.textContent = periodPendDenda>0
-      ? periodCnt+' transaksi · denda '+rp(periodPendDenda)
-      : periodCnt+' transaksi';
-  }
-  const _el_rek_period_peng=document.getElementById('rek-period-peng');if(_el_rek_period_peng){_el_rek_period_peng.textContent = rp(periodPeng);}
-  const _el_rek_period_peng_sub=document.getElementById('rek-period-peng-sub');if(_el_rek_period_peng_sub){_el_rek_period_peng_sub.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
-  const _el_rek_period_cnt=document.getElementById('rek-period-cnt');if(_el_rek_period_cnt){_el_rek_period_cnt.textContent = periodCnt;}
-  const _el_rek_period_label=document.getElementById('rek-period-label');if(_el_rek_period_label){_el_rek_period_label.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
-  const _el_rek_period_avg=document.getElementById('rek-period-avg');if(_el_rek_period_avg){_el_rek_period_avg.textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';}
-
-  // Card bawah: Total Pendapatan & Laba Bersih — ikut periode aktif
-  const periodLabelsLong = {hari:'Hari Ini', minggu:'Minggu Ini', bulan:'Bulan Ini', semua:'Semua'};
-  const labelEl = document.getElementById('rek-total-label');
+  if(labaEl){ labaEl.textContent = rp(Math.abs(periodLaba)); labaEl.style.color = periodLaba>=0?'var(--blue)':'var(--red)'; }
+  if(labaCard) labaCard.style.borderColor = periodLaba>=0?'var(--blue)':'var(--red)';
   const labaLabelEl = document.getElementById('rek-laba-total-label');
-  if(labelEl) labelEl.textContent = 'Total Pendapatan ('+periodLabelsLong[_dashPeriod]+')';
   if(labaLabelEl) labaLabelEl.textContent = 'Laba Bersih ('+periodLabelsLong[_dashPeriod]+')';
-  const elTotal=document.getElementById('rek-total'); if(elTotal) elTotal.textContent=rp(periodPend);
-  const elTotalSub=document.getElementById('rek-total-sub'); if(elTotalSub) elTotalSub.textContent='Dari '+periodCnt+' transaksi';
-  const labaBersihTotal = periodLaba;
-  const labaEl2 = document.getElementById('rek-laba-total');
-  if(labaEl2){
-    labaEl2.textContent = rp(Math.abs(labaBersihTotal));
-    labaEl2.style.color = labaBersihTotal >= 0 ? 'var(--blue)' : 'var(--red)';
-  }
   const labaSub = document.getElementById('rek-laba-total-sub');
-  if(labaSub) labaSub.textContent = (labaBersihTotal>=0?'Untung ':'Rugi ')+rp(Math.abs(labaBersihTotal));
+  if(labaSub){
+    const bagian = [];
+    bagian.push('Sewa '+rp(periodPendSewa));
+    if(periodPendDenda>0) bagian.push('Denda +'+rp(periodPendDenda));
+    bagian.push('Operasional −'+rp(periodPeng));
+    labaSub.textContent = bagian.join(' · ');
+  }
 
   // Bar chart & tabel ikut filter period
   const motorStats={};
