@@ -1159,7 +1159,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
         </div>
       </div>
-    </div>
 
       <!-- RIWAYAT DENDA -->
       <div class="card" style="margin-top:16px">
@@ -2429,17 +2428,19 @@ function kirimWA(){
   const denda=hitungDenda(p);
   const totalBayar=p.total+denda;
   const msg=encodeURIComponent(
-    `*Struk Rental Motor Tasikmalaya*\n`+
-    `----------------\n`+
-    `Nama: ${p.nama}\n`+
-    `Motor: ${p.motor}\n`+
-    `Sewa: ${formatTgl(p.mulai)} s/d ${formatTgl(p.selesai)} (${p.durasi} hari)\n`+
-    `Metode: ${p.payment}\n`+
-    `Harga Sewa: ${rp(p.total)}\n`+
-    (denda>0?`Denda: ${rp(denda)}\n`:'')+
-    `*TOTAL: ${rp(totalBayar)}*\n`+
-    `----------------\n`+
-    `Terima kasih, ${p.nama.split(' ')[0]}! `
+    `*Struk Sewa Motor — Rental Motor Tasikmalaya*\n`+
+    `--------------------------------\n`+
+    `Nama     : ${p.nama}\n`+
+    `Motor    : ${p.motor}\n`+
+    `Periode  : ${formatTgl(p.mulai)} s/d ${formatTgl(p.selesai)} (${p.durasi} hari)\n`+
+    `Metode   : ${p.payment}\n`+
+    `--------------------------------\n`+
+    `Harga Sewa : ${rp(p.total)}\n`+
+    (denda>0?`Denda      : ${rp(denda)}\n`:``)+
+    `*Total     : ${rp(totalBayar)}*\n`+
+    `--------------------------------\n`+
+    `Terima kasih, ${p.nama.split(' ')[0]}.\n`+
+    `Rental Motor Tasikmalaya`
   );
   const hp=p.hp.replace(/^0/,'62');
   window.open(`https://wa.me/${hp}?text=${msg}`,'_blank');
@@ -4114,13 +4115,13 @@ function kirimNotifH1(){
   targets.forEach(p => {
     const jamKembali = p.jamSelesai || '08:00';
     const msg = encodeURIComponent(
-      `Halo *${p.nama.split(' ')[0]}* 👋\n\n` +
-      `Reminder dari *Rental Motor Tasikmalaya* — motor *${p.motor}* yang Anda sewa dijadwalkan kembali besok:\n\n` +
-      `📅 Tanggal: *${formatTgl(p.selesai)}*\n` +
-      `🕐 Jam: *${jamKembali} WIB*\n\n` +
-      `Mohon kembalikan motor tepat waktu ya 🙏\n` +
-      `Keterlambatan dikenakan denda per jam.\n\n` +
-      `Terima kasih & salam — Rental Motor Tasikmalaya`
+      `Yth. Bapak/Ibu *${p.nama}*,\n\n` +
+      `Kami dari *Rental Motor Tasikmalaya* menginformasikan bahwa motor *${p.motor}* yang Anda sewa dijadwalkan untuk dikembalikan besok:\n\n` +
+      `Tanggal : *${formatTgl(p.selesai)}*\n` +
+      `Jam     : *${jamKembali} WIB*\n\n` +
+      `Mohon kembalikan motor tepat waktu. Keterlambatan pengembalian akan dikenakan denda per jam sesuai ketentuan.\n\n` +
+      `Terima kasih atas kepercayaan Anda.\n` +
+      `Rental Motor Tasikmalaya`
     );
     const hp = p.hp.replace(/^0/, '62');
     setTimeout(() => window.open(`https://wa.me/${hp}?text=${msg}`, '_blank'), sent * 800);
@@ -4130,7 +4131,7 @@ function kirimNotifH1(){
 }
 
 // ===== REKAP HARIAN WA KE PEMILIK =====
-const NOMOR_PEMILIK = '6281234567890'; // Ganti dengan nomor HP pemilik (format 62xxx)
+const NOMOR_PEMILIK = '6289524279736'; // Ganti dengan nomor HP pemilik (format 62xxx)
 function kirimRekapHarian(){
   const now = new Date();
   const todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
@@ -4146,17 +4147,19 @@ function kirimRekapHarian(){
   const tersedia = Math.max(0, totalUnit - aktif);
 
   const tgl = now.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  let msg = `📊 *REKAP HARIAN — Rental Motor Tasikmalaya*\n`;
+  let msg = `*REKAP HARIAN — Rental Motor Tasikmalaya*\n`;
   msg += `${tgl}\n`;
-  msg += `————————————————\n`;
-  msg += `🏍️ Motor tersewa: *${aktif}* dari ${totalUnit} unit (${tersedia} tersedia)\n`;
-  msg += `📋 Pesanan masuk hari ini: *${hariIni.length}*\n`;
-  msg += `💰 Pendapatan hari ini: *${rp(totalPend)}*\n`;
+  msg += `--------------------------------\n`;
+  msg += `Motor tersewa   : *${aktif}* dari ${totalUnit} unit\n`;
+  msg += `Unit tersedia   : *${tersedia} unit*\n`;
+  msg += `Pesanan masuk   : *${hariIni.length} pesanan*\n`;
+  msg += `Pendapatan      : *${rp(totalPend)}*\n`;
+  msg += `--------------------------------\n`;
   if(terlambat.length){
-    msg += `⚠️ Terlambat: *${terlambat.length} pesanan*\n`;
-    terlambat.forEach(p => { msg += `   - ${p.nama} (${p.motor})\n`; });
+    msg += `*Keterlambatan (${terlambat.length} pesanan):*\n`;
+    terlambat.forEach(p => { msg += `- ${p.nama} | ${p.motor}\n`; });
   } else {
-    msg += `✅ Tidak ada keterlambatan\n`;
+    msg += `Keterlambatan   : Tidak ada\n`;
   }
 
   // Jatuh tempo hari ini & besok
@@ -4164,9 +4167,9 @@ function kirimRekapHarian(){
   const besokStr = besok.getFullYear()+'-'+String(besok.getMonth()+1).padStart(2,'0')+'-'+String(besok.getDate()).padStart(2,'0');
   const jatuhHariIni = pesanan.filter(p => p.status==='Aktif' && p.selesai && p.selesai.startsWith(todayStr));
   const jatuhBesok   = pesanan.filter(p => p.status==='Aktif' && p.selesai && p.selesai.startsWith(besokStr));
-  if(jatuhHariIni.length) msg += `📌 Kembali hari ini: *${jatuhHariIni.map(p=>p.nama).join(', ')}*\n`;
-  if(jatuhBesok.length)   msg += `📌 Kembali besok: *${jatuhBesok.map(p=>p.nama).join(', ')}*\n`;
-  msg += `————————————————\n`;
+  if(jatuhHariIni.length) msg += `Kembali hari ini: *${jatuhHariIni.map(p=>p.nama).join(', ')}*\n`;
+  if(jatuhBesok.length)   msg += `Kembali besok   : *${jatuhBesok.map(p=>p.nama).join(', ')}*\n`;
+  msg += `--------------------------------\n`;
   msg += `_Dikirim otomatis via Dashboard_`;
 
   window.open(`https://wa.me/${NOMOR_PEMILIK}?text=${encodeURIComponent(msg)}`, '_blank');
