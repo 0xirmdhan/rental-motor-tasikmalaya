@@ -845,7 +845,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
             </select>
           </div>
         </div>
-        <div class="form-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+        <div class="form-row" style="grid-template-columns:1fr 1fr;gap:10px">
           <div class="fg" id="fg-mulai">
             <label>Tanggal Mulai</label>
             <input type="date" id="new-mulai" onchange="calcNew()">
@@ -983,7 +983,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         <input type="text" id="konsumen-search" placeholder="Cari nama, HP, KTP, perusahaan..." oninput="renderKonsumen()" style="min-width:0;flex:1">
         <select id="konsumen-filter-jenis" onchange="renderKonsumen()"><option value="">Semua Jenis</option><option value="perorangan">Perorangan</option><option value="perusahaan">Perusahaan</option></select>
         <select id="konsumen-filter-status" onchange="renderKonsumen()"><option value="">Semua Status</option><option value="normal">Normal</option><option value="blacklist">Blacklist</option></select>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('konsumen-search').value='';document.getElementById('konsumen-filter-jenis').value='';document.getElementById('konsumen-filter-status').value='';renderKonsumen()">Reset</button>
+
         <button class="btn btn-green-solid btn-sm" onclick="downloadExcelKonsumen()" style="margin-left:auto">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export Excel
@@ -1358,7 +1358,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="fg" id="efg-motor"><label>Motor</label><select id="e-motor" onchange="calcEdit()"><option value="">-- Pilih Motor --</option></select><span class="field-error">Pilih motor</span></div>
       <div class="fg"><label>Status</label><select id="e-status"><option value="Aktif">Aktif</option><option value="Selesai">Selesai</option><option value="Dibatalkan">Dibatalkan</option></select></div>
     </div>
-    <div class="modal-row" style="grid-template-columns:1fr 1fr 1fr 1fr">
+    <div class="modal-row" style="grid-template-columns:1fr 1fr;gap:10px">
       <div class="fg" id="efg-mulai"><label>Tanggal Mulai</label><input type="date" id="e-mulai" onchange="calcEdit()"><span class="field-error">Tanggal mulai wajib diisi</span></div>
       <div class="fg"><label>Jam Ambil</label><input type="text" id="e-jam-mulai" value="00:00" placeholder="HH:MM" pattern="[0-2][0-9]:[0-5][0-9]" maxlength="5" oninput="formatJamInput(this)" onchange="calcEdit()" autocomplete="off"></div>
       <div class="fg" id="efg-selesai"><label>Tanggal Selesai</label><input type="date" id="e-selesai" onchange="calcEdit()"><span class="field-error">Tanggal selesai wajib diisi</span></div>
@@ -2135,8 +2135,7 @@ function cetakStruk(){
     </div>
   `;
   const content = headerHtml + document.getElementById('struk-content').innerHTML;
-  const w = window.open('','_blank','width=700,height=900');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>Struk Rental Motor Tasikmalaya</title>
     <style>
       @page{margin:0;size:A5}
@@ -2147,9 +2146,21 @@ function cetakStruk(){
       td:last-child{text-align:right;font-weight:600}
       .total-row td{font-size:15px;font-weight:700;border-top:2px solid #111827;border-bottom:none;padding-top:12px;color:#2563eb}
       .footer-note{text-align:center;font-size:10px;color:#6b7280;margin-top:18px}
+      .back-btn{position:fixed;top:12px;left:12px;padding:8px 16px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999}
     </style>
-  </head><body>${content}<script>window.onload=function(){window.print();setTimeout(function(){window.close();},500);}<\/script></body></html>`);
-  w.document.close();
+  </head><body>
+  <button class="back-btn" onclick="window.history.back()">← Kembali</button>
+  ${content}
+  <script>
+    // Auto print hanya di desktop, di iOS cukup tampilkan
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(!isIOS){ window.onload=function(){ window.print(); }; }
+  <\/script>
+  </body></html>`;
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
 }
 function kirimWA(){
   if(curStrukIdx===null)return;
@@ -2872,8 +2883,11 @@ async function lihatKTPKonsumen(ktpNo, hp){
   const signedUrl = await getSignedUrl(stored, 60);
   if(!signedUrl){showToast('Gagal memuat foto KTP, coba lagi');return;}
   const w=window.open('','_blank','width=700,height=600');
-  w.document.write('<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="'+signedUrl+'" style="max-width:100%;max-height:100vh;border-radius:8px"><p style="position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#555;font-size:11px;font-family:sans-serif">Link ini expired dalam 60 detik</p></body></html>');
-  w.document.close();
+  const ktpHtml = '<html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#111;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh\"><button onclick=\"window.history.back()\" style=\"position:fixed;top:12px;left:12px;padding:8px 16px;background:#fff;color:#111;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999\">← Kembali</button><img src=\"'+signedUrl+'\" style=\"max-width:100%;max-height:90vh;border-radius:8px;margin-top:48px\"><p style=\"position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#666;font-size:11px;font-family:sans-serif\">Link expired dalam 60 detik</p></body></html>';
+  const ktpBlob = new Blob([ktpHtml], {type:'text/html'});
+  const ktpUrl = URL.createObjectURL(ktpBlob);
+  window.open(ktpUrl, '_blank');
+  setTimeout(()=>URL.revokeObjectURL(ktpUrl), 65000);
 }
 
 function renderKonsumen(){
@@ -3176,11 +3190,14 @@ function handlePengBuktiUpload(e){
   const file = e.target.files[0]; if(!file) return;
   const reader = new FileReader();
   reader.onload = function(ev){
-    pengBuktiData = ev.target.result;
-    document.getElementById('peng-bukti-preview').src = ev.target.result;
-    document.getElementById('peng-bukti-preview').classList.add('show');
-    document.getElementById('peng-bukti-text').textContent = ''+file.name;
-    document.getElementById('peng-bukti-area').style.borderColor = 'var(--green)';
+    // Kompres otomatis: max 900px, quality 0.55 — cukup terbaca untuk nota/struk
+    compressImage(ev.target.result, 900, 0.55, function(compressed){
+      pengBuktiData = compressed;
+      document.getElementById('peng-bukti-preview').src = compressed;
+      document.getElementById('peng-bukti-preview').classList.add('show');
+      document.getElementById('peng-bukti-text').textContent = file.name + ' (terkompresi)';
+      document.getElementById('peng-bukti-area').style.borderColor = 'var(--green)';
+    });
   };
   reader.readAsDataURL(file);
 }
@@ -3204,10 +3221,16 @@ async function tambahPengeluaran(){
   const ket = document.getElementById('peng-ket').value.trim();
   if(!tgl){showToast('Tanggal wajib diisi');return;}
   if(!jumlah||jumlah<=0){showToast('Jumlah pengeluaran tidak valid');return;}
+  // Upload bukti ke Supabase Storage jika ada
+  let buktiUrl = null;
+  if(pengBuktiData){
+    const ts = Date.now();
+    buktiUrl = await uploadImg(pengBuktiData, 'bukti-pengeluaran', 'peng_'+ts);
+  }
   const entry = {
     id: Date.now(),
     tgl, kat, jumlah, ket,
-    bukti: pengBuktiData || null,
+    bukti: buktiUrl || null,
     oleh: currentUser ? currentUser.name : 'Admin',
     waktu: new Date().toISOString()
   };
@@ -3230,12 +3253,18 @@ async function hapusPengeluaran(id){
   showToast('Pengeluaran dihapus');
 }
 
-function lihatBuktiPengeluaran(id){
+async function lihatBuktiPengeluaran(id){
   const p = pengeluaran.find(x => x.id === id);
   if(!p || !p.bukti){showToast('Tidak ada bukti untuk entri ini');return;}
+  showToast('Membuka bukti...');
+  const url = await getSignedUrl(p.bukti, 60);
+  if(!url){showToast('Gagal memuat bukti, coba lagi');return;}
   const w = window.open('','_blank','width=700,height=600');
-  w.document.write('<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:center;min-height:100vh"><img src="'+p.bukti+'" style="max-width:100%;max-height:100vh;border-radius:8px"></body></html>');
-  w.document.close();
+  const buktiHtml = '<html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;background:#111;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh\"><button onclick=\"window.history.back()\" style=\"position:fixed;top:12px;left:12px;padding:8px 16px;background:#fff;color:#111;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999\">← Kembali</button><img src=\"'+url+'\" style=\"max-width:100%;max-height:90vh;border-radius:8px;margin-top:48px\"><p style=\"position:fixed;bottom:12px;left:0;right:0;text-align:center;color:#666;font-size:11px;font-family:sans-serif\">Link expired dalam 60 detik</p></body></html>';
+  const buktiBlob = new Blob([buktiHtml], {type:'text/html'});
+  const buktiBlobUrl = URL.createObjectURL(buktiBlob);
+  window.open(buktiBlobUrl, '_blank');
+  setTimeout(()=>URL.revokeObjectURL(buktiBlobUrl), 65000);
 }
 
 function updatePengRekapTop(){
