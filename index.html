@@ -2139,7 +2139,13 @@ function cetakStruk(){
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>Struk Rental Motor Tasikmalaya</title>
     <style>
-      @page{margin:16mm;size:A5}
+      @page{
+        margin:0;
+        size:A5;
+      }
+      /* Sembunyikan header/footer browser (URL, tanggal) saat print */
+      @page:first{ margin-top:0 }
+      html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       *{box-sizing:border-box;margin:0;padding:0}
       body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111827;font-size:13px;max-width:480px;margin:0 auto;padding:24px 20px}
       /* Struk rows — sama persis dengan tampilan di dashboard */
@@ -2159,7 +2165,7 @@ function cetakStruk(){
       .back-btn{position:fixed;top:12px;left:12px;padding:8px 16px;background:#111827;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;z-index:999}
       @media print{
         .back-btn{display:none}
-        body{padding:0;max-width:100%}
+        body{padding:14mm 16mm;max-width:100%}
       }
     </style>
   </head><body>
