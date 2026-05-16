@@ -819,7 +819,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           </div>
           <div class="fg" id="fg-hp">
             <label>Nomor HP / WhatsApp</label>
-            <input type="tel" id="new-hp" placeholder="08xxxxxxxxxx">
+            <input type="tel" id="new-hp" placeholder="08xxxxxxxxxx" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
             <span class="field-error" id="fgerr-hp">Nomor HP tidak valid</span>
           </div>
         </div>
@@ -1351,7 +1351,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div class="modal-section">Data Penyewa</div>
     <div class="modal-row">
       <div class="fg" id="efg-nama"><label>Nama Lengkap</label><input type="text" id="e-nama" placeholder="Nama penyewa"><span class="field-error">Nama wajib diisi</span></div>
-      <div class="fg" id="efg-hp"><label>Nomor HP / WhatsApp</label><input type="tel" id="e-hp" placeholder="08xxxxxxxxxx"><span class="field-error" id="efg-hp-msg">Nomor HP wajib diisi</span></div>
+      <div class="fg" id="efg-hp"><label>Nomor HP / WhatsApp</label><input type="tel" id="e-hp" placeholder="08xxxxxxxxxx" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')"><span class="field-error" id="efg-hp-msg">Nomor HP wajib diisi</span></div>
     </div>
     <div class="modal-section">Detail Sewa</div>
     <div class="modal-row">
