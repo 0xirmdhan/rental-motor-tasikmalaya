@@ -1112,15 +1112,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
           <div class="rekap-mini-sub">rata-rata nilai sewa</div>
         </div>
       </div>
-      <!-- Baris 3: Total semua + Laba bersih total -->
+      <!-- Baris 3: Total periode + Laba bersih periode -->
       <div class="rekap-row">
         <div class="rekap-card">
-          <div class="rekap-label">Total Pendapatan (Semua)</div>
+          <div class="rekap-label" id="rek-total-label">Total Pendapatan</div>
           <div class="rekap-val" id="rek-total" style="color:var(--green)">Rp 0</div>
           <div class="rekap-sub" id="rek-total-sub">Dari 0 transaksi</div>
         </div>
         <div class="rekap-card">
-          <div class="rekap-label">Laba Bersih (Semua)</div>
+          <div class="rekap-label" id="rek-laba-total-label">Laba Bersih</div>
           <div class="rekap-val" id="rek-laba-total">Rp 0</div>
           <div class="rekap-sub" id="rek-laba-total-sub">Pendapatan − Pengeluaran</div>
         </div>
@@ -2724,8 +2724,6 @@ function renderKeuangan(){
   const now=new Date();
   const valid=pesanan.filter(p=>p.status!=='Dibatalkan');
   const bulanIni=valid.filter(p=>{const d=parseWaktu(p);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
-  const elTotal=document.getElementById('rek-total'); if(elTotal) elTotal.textContent=rp(valid.reduce((a,b)=>a+(b.total||0),0));
-  const elTotalSub=document.getElementById('rek-total-sub'); if(elTotalSub) elTotalSub.textContent='Dari '+valid.length+' transaksi';
   const elBulan=document.getElementById('rek-bulan'); if(elBulan) elBulan.textContent=rp(bulanIni.reduce((a,b)=>a+(b.total||0),0));
   const elBulanSub=document.getElementById('rek-bulan-sub'); if(elBulanSub) elBulanSub.textContent=bulanIni.length+' transaksi bulan ini';
 
@@ -2779,10 +2777,15 @@ function renderKeuangan(){
   const _el_rek_period_label=document.getElementById('rek-period-label');if(_el_rek_period_label){_el_rek_period_label.textContent = periodLabels[_dashPeriod]||_dashPeriod;}
   const _el_rek_period_avg=document.getElementById('rek-period-avg');if(_el_rek_period_avg){_el_rek_period_avg.textContent = periodCnt>0 ? rp(Math.round(periodPend/periodCnt)) : 'Rp 0';}
 
-  // Laba bersih total (semua waktu)
-  const totalPend = valid.reduce((a,b)=>a+(b.total||0),0);
-  const totalPeng = pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
-  const labaBersihTotal = totalPend - totalPeng;
+  // Card bawah: Total Pendapatan & Laba Bersih — ikut periode aktif
+  const periodLabelsLong = {hari:'Hari Ini', minggu:'Minggu Ini', bulan:'Bulan Ini', semua:'Semua'};
+  const labelEl = document.getElementById('rek-total-label');
+  const labaLabelEl = document.getElementById('rek-laba-total-label');
+  if(labelEl) labelEl.textContent = 'Total Pendapatan ('+periodLabelsLong[_dashPeriod]+')';
+  if(labaLabelEl) labaLabelEl.textContent = 'Laba Bersih ('+periodLabelsLong[_dashPeriod]+')';
+  const elTotal=document.getElementById('rek-total'); if(elTotal) elTotal.textContent=rp(periodPend);
+  const elTotalSub=document.getElementById('rek-total-sub'); if(elTotalSub) elTotalSub.textContent='Dari '+periodCnt+' transaksi';
+  const labaBersihTotal = periodLaba;
   const labaEl2 = document.getElementById('rek-laba-total');
   if(labaEl2){
     labaEl2.textContent = rp(Math.abs(labaBersihTotal));
