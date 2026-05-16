@@ -1900,7 +1900,11 @@ function parseLocalDate(str){
   return isNaN(d)?null:d;
 }
 function parseWaktu(p){
-  if(p.mulai)return new Date(p.mulai);
+  // Parse YYYY-MM-DD sebagai local time (bukan UTC) untuk hindari timezone shift
+  if(p.mulai){
+    const m=p.mulai.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+  }
   if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d;}
   return new Date();
 }
@@ -2052,11 +2056,20 @@ function setDashPeriod(period){
 
 function getFilteredByPeriod(){
   const now = new Date();
+  // todayStr: tanggal hari ini format YYYY-MM-DD (lokal)
+  const todayStr = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  console.log('[Filter] period='+_dashPeriod+' todayStr='+todayStr+' pesanan.length='+pesanan.length);
+  if(pesanan.length>0) console.log('[Filter] sample mulai='+pesanan[0].mulai+' waktu='+pesanan[0].waktu);
   if(_dashPeriod === 'hari'){
-    return pesanan.filter(p=>{
-      const d = parseWaktu(p);
-      return d.getDate()===now.getDate() && d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    const result = pesanan.filter(p=>{
+      // Cek p.mulai langsung sebagai string (timezone-safe)
+      if(p.mulai && p.mulai.startsWith(todayStr)) return true;
+      // Fallback: cek p.waktu (ISO string waktu input)
+      if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d)){return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===now.getDate();}}
+      return false;
     });
+    console.log('[Filter] hari result='+result.length);
+    return result;
   }
   if(_dashPeriod === 'bulan'){
     return pesanan.filter(p=>{
@@ -2737,14 +2750,24 @@ function renderKeuangan(){
   const periodCnt = periodData.length;
   const periodLabels = {hari:'hari ini', minggu:'minggu ini', bulan:'bulan ini', semua:'semua data'};
 
-  // Hitung pengeluaran per periode
+  // Hitung pengeluaran per periode (timezone-safe)
   const periodPeng = (()=>{
     const now2=new Date();
+    const todayStrPeng=now2.getFullYear()+'-'+String(now2.getMonth()+1).padStart(2,'0')+'-'+String(now2.getDate()).padStart(2,'0');
     if(_dashPeriod==='semua') return pengeluaran.reduce((a,b)=>a+(b.jumlah||0),0);
     return pengeluaran.filter(p=>{
-      const d=new Date(p.tgl||p.waktu);
-      if(isNaN(d)) return false;
-      if(_dashPeriod==='hari') return d.toDateString()===now2.toDateString();
+      // Coba parse tgl sebagai local date string (YYYY-MM-DD) dulu
+      const tglStr = p.tgl||'';
+      if(_dashPeriod==='hari'){
+        if(tglStr && tglStr.startsWith(todayStrPeng)) return true;
+        if(p.waktu){const d=new Date(p.waktu);if(!isNaN(d))return d.toDateString()===now2.toDateString();}
+        return false;
+      }
+      // Untuk minggu & bulan: parse YYYY-MM-DD sebagai lokal
+      let d;
+      const m=tglStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m) d=new Date(parseInt(m[1]),parseInt(m[2])-1,parseInt(m[3]));
+      else{d=new Date(p.waktu);if(isNaN(d))return false;}
       if(_dashPeriod==='minggu'){
         const startOfWeek=new Date(now2);
         startOfWeek.setDate(now2.getDate()-now2.getDay()+(now2.getDay()===0?-6:1));
